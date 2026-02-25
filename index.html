@@ -2211,23 +2211,6 @@ const functions = {
             }
         }
         
-        //Note to future idiot self: 
-        /**
-        Thanks to CZS for real world positioning!
-        
-        Canvas transformations kind of take effect in reverse, which has always been a little confusing to me, and I think it's what's confusing you as well. In cam.run(), you're calling scale() first, then translate(), but the effect is that the stuff on the canvas is being translated first and then scaled. This means that, in order to calculate the final position on the canvas, we need to add the argument of translate() first, and then multiply by the argument of scale():
-    
-        xOnCanvas = (xInRoom + translatedX) * scaleFactor;
-
-        This should help with the mouse problem as well. The inverse of the equation above is:
-
-        xInRoom = xOnCanvas / scaleFactor - translatedX;
-        **/
-        
-        //the players real world position 
-        //let plX = (player.x + player.xOff - cam.x + cam.align.x) * cam.z - 30;
-        //let plY = (player.y + player.yOff - cam.y + cam.align.y) * cam.z - 180;
-        
         let pl = worldToScreen(player.x, player.y); 
         
         
@@ -4005,72 +3988,6 @@ const openInFullscreen = () => {
 
 //add the event listener
 button.addEventListener('click', openInFullscreen);
-
-/**
-window.openInFullscreen = function(){
-    var w = window.open();
-    
-    let pageCode = "";
-    pageCode += "<html><head><script>";
-    pageCode += "var KAInfiniteLoopProtect = function(){};";
-    pageCode += "</scr" + "ipt>";
-    pageCode += document.getElementsByTagName("head")[0].innerHTML;
-    pageCode += "</head><body>";
-    pageCode += document.getElementsByTagName("body")[0].innerHTML;
-    pageCode += "</body></html>";
-    
-    
-    w.document.open();
-    w.document.write(pageCode);
-    w.document.close(); 
-};
-        
-document.body.addEventListener("click", function(){
-    if(width <= 4000){
-        window.openInFullscreen();
-    }
-
-    else{
-        let fullScreen = window.innerWidth === screen.width && window.innerHeight === screen.height;
-
-        if(fullScreen){
-            if(document.exitFullscreen){
-                document.exitFullscreen();
-            }
-
-            // safari
-            else if(document.webkitExitFullscreen){
-                document.webkitExitFullscreen();
-            }
-
-            // MS edge
-            else if(document.msExitFullscreen){
-                document.msExitFullscreen();
-            }
-        }
-        else{
-            if(document.body.requestFullscreen){
-                document.body.requestFullscreen();
-            }
-
-            // safari
-            else if(document.body.webkitRequestFullscreen){
-                document.body.webkitRequestFullscreen();
-            }
-
-            // MS edge
-            else if(document.body.msRequestFullscreen){
-                document.body.msRequestFullscreen();
-            }
-        }
-    }
-
-});**/
-
-
-
-    
-//})();
 
 } 
 catch(e){
