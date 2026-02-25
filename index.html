@@ -4,9 +4,10 @@
         <!--Encoding and viewport-->
 	    <meta charset="utf-8">
 	    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!--Import google font: Exo -->
+        <!--Import google font: Exo -->
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Exo">
         <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Lato&family=Material+Icons&display=swap'>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
         <!--The page title-->
         <title>New webpage</title>
         <!--CSS Styling-->
@@ -191,6 +192,54 @@ function resizeCanvasAndScale() {
 //run
 resizeCanvasAndScale();
 
+//matter js setuip
+const { 
+    Engine: MEngine, 
+    Bodies: MBodies, 
+    Body: MBody,
+    World: MWorld, 
+    Events: MEvents 
+} = Matter;
+
+const mEngine = MEngine.create({ 
+    gravity: { 
+        x: 0, 
+        y: 0 
+    } 
+});
+const mWorld  = mEngine.world;
+
+const mContacts = { 
+    grounded: false, 
+    left: false, 
+    right: false,
+     ceiling: false 
+};
+let mPlayerBody = null;
+let mBlockBodies = [];
+let mCpuBodies = [];
+
+function _syncContacts(event) {
+    for (const pair of event.pairs) {
+        if (!mPlayerBody) continue;
+        if (pair.bodyA !== mPlayerBody && pair.bodyB !== mPlayerBody) continue;
+
+        const isA = pair.bodyA === mPlayerBody;
+        const n = pair.collision.normal;
+        const nx = isA ?  n.x : -n.x;
+        const ny = isA ?  n.y : -n.y;
+
+        if (ny >  0.5) mContacts.grounded = true;
+        if (ny < -0.5) mContacts.ceiling = true;
+        if (nx < -0.5) mContacts.left = true;
+        if (nx >  0.5) mContacts.right = true;
+    }
+}
+MEvents.on(mEngine, 'collisionStart',  _syncContacts);
+MEvents.on(mEngine, 'collisionActive', _syncContacts);
+
+
+
 //The sign of a num
 function sign(x) {
     return (abs(x) / x) || 0;
@@ -288,7 +337,7 @@ function quad(x1, y1, x2, y2, x3, y3, x4, y4) {
 	vertex(x2, y2);
 	vertex(x3, y3);
 	vertex(x4, y4);
-	vertex(x1, y1);
+	vertex(x1, y1); 
 	endShape();
 }
 function triangle(x1, y1, x2, y2, x3, y3) {
@@ -2179,6 +2228,18 @@ const functions = {
                 this.resetRoom();
                 player.x = this.plCoord.x;
                 player.y = lvlSizeY - player.h;
+                player.v.x = 0;
+                player.v.y = 0;
+                if(mPlayerBody){
+                    MBody.setPosition(mPlayerBody, { 
+                        x: player.x + player.w/2, 
+                        y: player.y + player.h/2 
+                    });
+                    MBody.setVelocity(mPlayerBody, { 
+                        x: 0, 
+                        y: 0 
+                    });
+                }
                 this.top = false;
                 this.started = false;
             }
@@ -2188,6 +2249,18 @@ const functions = {
                 this.resetRoom();
                 player.x = this.plCoord.x;
                 player.y = 0;
+                player.v.x = 0;
+                player.v.y = 0;
+                if(mPlayerBody){
+                    MBody.setPosition(mPlayerBody, { 
+                        x: player.x + player.w/2, 
+                        y: player.y + player.h/2 
+                    });
+                    MBody.setVelocity(mPlayerBody, { 
+                        x: 0, 
+                        y: 0 
+                    });
+                }
                 this.bottom = false;
                 this.started = false;
             }
@@ -2197,6 +2270,18 @@ const functions = {
                 this.resetRoom();
                 player.x = lvlSizeX - player.w;
                 player.y = this.plCoord.y;
+                player.v.x = 0;
+                player.v.y = 0;
+                if(mPlayerBody){
+                    MBody.setPosition(mPlayerBody, { 
+                        x: player.x + player.w/2, 
+                        y: player.y + player.h/2 
+                    });
+                    MBody.setVelocity(mPlayerBody, { 
+                        x: 0, 
+                        y: 0 
+                    });
+                }
                 this.left = false;
                 this.started = false;
             }
@@ -2206,6 +2291,18 @@ const functions = {
                 this.resetRoom();
                 player.x = 5;
                 player.y = this.plCoord.y;
+                player.v.x = 0;
+                player.v.y = 0;
+                if(mPlayerBody){
+                    MBody.setPosition(mPlayerBody, { 
+                        x: player.x + player.w/2, 
+                        y: player.y + player.h/2 
+                    });
+                    MBody.setVelocity(mPlayerBody, { 
+                        x: 0, 
+                        y: 0 
+                    });
+                }
                 this.right = false;
                 this.started = false;
             }
@@ -2263,6 +2360,19 @@ const functions = {
                 curRow = this.startPos.row;
                 curColumn = this.startPos.col;
                 loadLevelFromString(LEVEL);
+
+                //loadLevelFromString recreates mPlayerBody, so sync after it runs
+                if(mPlayerBody){
+                    MBody.setPosition(mPlayerBody, { 
+                        x: player.x + player.w/2, 
+                        y: player.y + player.h/2 
+                    });
+                    MBody.setVelocity(mPlayerBody, { 
+                        x: 0, 
+                        y: 0
+                     });
+                }
+
                 this.deathTimer = this.deathTimerStart;
                 this.plUpdate = true;
                 this.plDisplay = true;
@@ -2561,192 +2671,81 @@ const player = {
         this.time += DT;
     },  
     
-    //collide on the X and Y axis
-    collideX: function(that){
-        //first check if the player is touching a block
-        if(edgeCheck(this, that)){
-            //vector velocity can determine what side
-            if(this.v.x > 0){
-                this.collide.right = true;
-                this.x = that.x - this.w;
-            }
-            else {
-                this.collide.left = true;
-                this.x = that.x + that.w;
-            }
-            
-            //the player is colliding
-            that.colX = true;
-            return true;
-        }
-        
-        //the player is not colliding on the x-axis
-        this.collide.left = false;
-        this.collide.right = false;
-        that.colX = false;
-        return false;
-    },
-    collideY: function(that){
-        //is the player touching a block?
-        if(edgeCheck(this, that)){
-            //vector velocity can determine orientation
-            if(this.v.y > 0){
-                this.collide.top = true;
-                this.y = that.y - this.h;
-                this.v.y = 0;
-            }
-            else {
-                this.collide.bottom = true;
-                this.y = that.y + that.h;
-                this.v.y *= -0.1;
-            }
-            
-            //the player is colliding on the y-axis
-            that.colY = true;
-            return true;
-        }
-        
-        //the player is not colliding on the y-axis
-        this.collide.top = false;
-        this.collide.bottom = false;
-        that.colY = false;
-        return false;
-    },
-    
-    moveX: function(DT){
-        //search for inputs specific to X movement every iteration
-        this.input.left = (keys[37] || keys[65]);
+    //collide on the X and Y axis (to lazy to remove them completly :skull)
+    collideX: function(that) { return false; },
+    collideY: function(that) { return false; },
+
+    moveX: function(DT) {
+        this.input.left  = (keys[37] || keys[65]);
         this.input.right = (keys[39] || keys[68]);
         this.input.space = keys[32];
-        
-        //prevent the user from spamming
+
         const justPressedSpace = this.input.space && !this.lastSpaceState;
         this.lastSpaceState = this.input.space;
-        
-        //dash Logic
-        if(this.collide.top) {
-            this.dashReset = true;
-        }
-        if (((justPressedSpace) && !this.collide.top) && !this.dashReset) {
-            console.info("true");
+
+        if (mContacts.grounded) this.dashReset = true;
+
+        if (justPressedSpace && !mContacts.grounded && !this.dashReset) {
             this.v.x = this.dir * this.dashPower;
             this.dashReset = false;
-            //this.dashTime = 10; 
-            //this.dashCooldown = 40;
             this.state = "dash";
-            //snowMovementParticles.add(this.x, this.y, this.w, this.h, this.v.x, this.dir, true, this.speed);
         }
-        
-        
-        //console.log("player x", this.v.x)
-        
-        //vector movement
-        if(this.input.left && !this.collide.left){
+
+        if (this.input.left && !mContacts.left) {
             this.v.x -= this.acceleration * DT;
-            if(!this.collide.top){
-                this.action = "air";
-            }
-            else if(!this.collide.right){
-                this.action = "walk";
-                
-            }
-            else {
-                this.action = "idle";
-            }
+            this.action = mContacts.grounded ? "walk" : "air";
             this.dir = -1;
-        }
-        else if (this.input.right && !this.collide.right) { 
+        } 
+        else if (this.input.right && !mContacts.right) {
             this.v.x += this.acceleration * DT;
-            if(!this.collide.top){
-                this.action = "air";
-            }
-            else if(!this.collide.left){
-                this.action = "walk";
-            }
-            else {
-                this.action = "idle";
-            }
+            this.action = mContacts.grounded ? "walk" : "air";
             this.dir = 1;
+        } else {
+            this.v.x /= this.friction;
+            if (mContacts.grounded) this.action = "idle";
         }
-        else {
-            //apply higher friction during dash for a "snappy" stop
-            this.v.x /= this.friction; 
-            
-            //this.v.x *= (this.dashTime > 0) ? this.dashFriction : this.friction;
-            
-            if(this.collide.top){
-                this.action = "idle";
-            }
-            
-            //this.action = "idle";
-        }
-        
-        
-        //console.log("x pos", this.x);
-        
-        //
-        //only limit speed if not currently dashing
-        if (this.state !== "dash") {
-            this.v.x = constrain(this.v.x, -this.speed, this.speed);
-        }
-        else {
-            //while dashing, use a much higher limit or no limit
-            this.v.x = constrain(this.v.x, -this.dashPower, this.dashPower);
-        }
-        
-        //update
-        this.x += this.v.x * DT;
-        
-        
+
+        //kill velocity into a wall
+        if (mContacts.left  && this.v.x < 0) this.v.x = 0;
+        if (mContacts.right && this.v.x > 0) this.v.x = 0;
+
+        const maxV = this.state === "dash" ? this.dashPower : this.speed;
+        this.v.x = constrain(this.v.x, -maxV, maxV);
     },
-    moveY: function(DT){
+    moveY: function(DT) {
         this.input.up = (keys[38] || keys[87]);
 
         const justPressedUp = this.input.up && !this.lastUpState;
         this.lastUpState = this.input.up;
-        
-        //ground vs air state
-        if (this.collide.top) {
-            this.coyoteTime = this.maxCoyoteTime; 
-            this.jumpCount = 0; 
-        } 
-        else {
-            this.coyoteTime --; 
+
+        if (mContacts.grounded) {
+            this.coyoteTime = this.maxCoyoteTime;
+            this.jumpCount  = 0;
+            this.v.y = 0;
+        } else {
+            this.coyoteTime--;
+            this.v.y += this.gravity * DT;
         }
-        
-        //
+
         if (justPressedUp) {
             if (this.coyoteTime > 0) {
-                // coyote jump (acts as the first jump)
                 this.v.y = -this.jumpPow;
-                this.jumpCount = 1;
-                
-                //console.info("coyote/normal jump");
-                
-                this.coyoteTime = 0; 
-                
-            } 
-            else if (this.jumpCount < 2) {
-                
+                this.jumpCount  = 1;
+                this.coyoteTime = 0;
+            } else if (this.jumpCount < 2) {
                 this.v.y = -this.jumpPow;
-                
-                //console.info("double jumped");
-                
-                this.jumpCount = 2; 
-                
+                this.jumpCount = 2;
             }
         }
-                
-        //this.landed = false;
-        //integrate acceleration (gravity) and apply using dt
+
+        if (mContacts.ceiling && this.v.y < 0) this.v.y = 0;
+
         this.v.y += this.gravity * DT;
-        this.y += this.v.y * DT;
-        if(!this.collide.top) {
-            this.action = "air";
-        }
-        
+        this.v.y = Math.min(this.v.y, 350);
+        if (!mContacts.grounded) this.action = "air";
     },
-    
+
+
     display: function(DT) {
         
         //console.log("velocity x", this.v.x)
@@ -2821,86 +2820,17 @@ class CPU {
         ellipse(this.x + this.w/2, this.y + this.h/2, this.w, this.h);
         ctx.restore();
     }
-    moveX(player){
-        //vector movement
-        //if(!this.collide.left){
-            //this.v.x -= this.acceleration;
-            //this.dir = -1;
-        //}
-        if(this.x > player.x){
-            //this.accel.x = -0.1;
-        }
-        if(this.x < player.x){
-            //this.accel.x = 0.1;
-        }
+    moveX(player) {
+        if (this.x > player.x) this.accel.x = -0.05;
+        if (this.x < player.x) this.accel.x =  0.05;
         this.v.x += this.accel.x;
-        this.x += this.v.x;
-        
-        //fixes an annoying bug
-        // if(this.v.x !== 0){
-        //     this.x += this.v.x;
-        // }
-        this.v.x = constrain(this.v.x, -this.speed, this.speed);
+        this.v.x  = constrain(this.v.x, -this.speed, this.speed);
     }
-    moveY(player){
-        this.y += this.accel.y;
-        this.y += this.v.y;
+    moveY(player) {
+        this.v.y += this.accel.y;
     }
-    
-    
-    collideX (that){
-        //first check if the player is touching a block
-        if(edgeCheck(this, that)){
-            //vector velocity can determine what side
-            if(this.v.x > 0){
-                this.collide.right = true;
-                this.x = that.x - this.w;
-            }
-            else {
-                this.collide.left = true;
-                this.x = that.x + that.w;
-            }
-            
-            //the player is colliding
-            that.colX = true;
-            return true;
-        }
-        //the player is not colliding on the x-axis
-        this.collide.left = false;
-        this.collide.right = false;
-        that.colX = false;
-        return false;
-    }
-    collideY (that){
-        //is the player touching a block?
-        if(edgeCheck(this, that)){
-            
-            //console.log("cpu col y", true);
-            //vector velocity can determine orientation
-            if(this.v.y > 0){
-                this.collide.top = true;
-                this.y = that.y - this.h;
-                this.v.y = 0;
-            }
-            else {
-                this.collide.bottom = true;
-                this.y = that.y + that.h;
-                this.v.y *= -0.1;
-            }
-            
-            //the player is colliding on the y-axis
-            that.colY = true;
-            return true;
-        }
-        else {
-            //console.log("cpu col y", false);
-        }
-        //the player is not colliding on the y-axis
-        this.collide.top = false;
-        this.collide.bottom = false;
-        that.colY = false;
-        return false;
-    }
+    collideX(that) { return false; }
+    collideY(that) { return false; }
     
     run(player){
         this.moveX(player);
@@ -3239,7 +3169,7 @@ const tiled = {
     
         //bottom row (if there's more than one row)
         if (rows > 1) {
-            for (let col = cols - 1; col >= 0; col--) {
+            for (let col = cols - 1; col >= 0; col--) { 
                 edges.push(matrix[rows - 1][col]);
             }
         }
@@ -3255,130 +3185,127 @@ const tiled = {
 
 //map constructor, this inputs a 2d array (or an array of strings). A representation of one room
 const loadLevelFromString = (function(MAP) {
-    //reset arrays
     collidables = [];
     nonCollidables = [];
     rearBlocks = [];
     cpus = [];
-    
-    //const MAP = lvl;
+
+    //clear old Matter bodies
+    if (mBlockBodies.length) { 
+        MWorld.remove(mWorld, mBlockBodies); 
+        mBlockBodies = []; 
+    }
+    if (mCpuBodies.length){ 
+        MWorld.remove(mWorld, mCpuBodies);
+        mCpuBodies = [];
+    }
+    if (mPlayerBody) { 
+        MWorld.remove(mWorld, mPlayerBody);
+        mPlayerBody = null;
+    }
+
     let longestX = 0;
-    
+
     for (let i = 0; i < MAP.length; i++) {
         for (let j = 0; j < MAP[i].length; j++) {
             switch (MAP[i][j]) {
-                //A standard block
                 case "#": {
-                    collidables.push(
-                        new Block(
-                            j * blockSize, 
-                            i * blockSize,
-                            blockSize, 
-                            blockSize, 
-                            "block", tiled.left(MAP, i, j, "#"), 
-                            tiled.right(MAP, i, j, "#"), 
-                            !tiled.top(MAP, i, j, "#") && !tiled.top(MAP, i, j, "-") ? false: true, 
-                            tiled.bottom(MAP, i, j, "#"),
-                            tiled.isOnEdge(MAP, i, j), 
-                            Math.random() * (1.4 - 0.6) + 0.6
-                        )
-                    );
+                    const bx = j * blockSize, by = i * blockSize;
+                    collidables.push(new Block(
+                        bx, by, blockSize, blockSize, "block",
+                        tiled.left(MAP, i, j, "#"), tiled.right(MAP, i, j, "#"),
+                        !tiled.top(MAP, i, j, "#") && !tiled.top(MAP, i, j, "-") ? false : true,
+                        tiled.bottom(MAP, i, j, "#"), tiled.isOnEdge(MAP, i, j),
+                        Math.random() * 0.8 + 0.6
+                    ));
+                    mBlockBodies.push(MBodies.rectangle(
+                        bx + blockSize / 2, by + blockSize / 2,
+                        blockSize, blockSize,
+                        { isStatic: true, label: 'block', friction: 0, restitution: 0 }
+                    ));
                     break;
                 }
-                //A cpu
                 case "E": {
-                    cpus.push(
-                        new CPU(
-                            j * blockSize, 
-                            i * blockSize, 
-                            blockSize, 
-                            blockSize, 
-                            "block", 
-                            tiled.left(MAP, i, j, "#"), 
-                            tiled.right(MAP, i, j, "#"), 
-                            !tiled.top(MAP, i, j, "#") && !tiled.top(MAP, i, j, "-") ? false: true, 
-                            tiled.bottom(MAP, i, j, "#"),
-                            tiled.isOnEdge(MAP, i, j), 
-                            Math.random() * (1.4 - 0.6) + 0.6
-                        )
+                    const cx = j * blockSize, cy = i * blockSize;
+                    const cpu = new CPU(
+                        cx, cy, blockSize, blockSize, "block",
+                        tiled.left(MAP, i, j, "#"), tiled.right(MAP, i, j, "#"),
+                        !tiled.top(MAP, i, j, "#") && !tiled.top(MAP, i, j, "-") ? false : true,
+                        tiled.bottom(MAP, i, j, "#"), tiled.isOnEdge(MAP, i, j),
+                        Math.random() * 0.8 + 0.6
                     );
+                    cpus.push(cpu);
+                    const cb = MBodies.rectangle(
+                        cx + blockSize / 2, cy + blockSize / 2,
+                        blockSize, blockSize,
+                        { label: 'cpu', friction: 0, restitution: 0,
+                          inertia: Infinity, inverseInertia: 0 }
+                    );
+                    mCpuBodies.push(cb);
                     break;
                 }
-                //A checkpoint
                 case "C": {
-                    rearBlocks.push(
-                        new Checkpoint(
-                            j * blockSize, 
-                            (i * blockSize) - blockSize * 2, 
-                            blockSize, blockSize * 3, 
-                            "lamp", 
-                            tiled.left(MAP, i, j, "#"), 
-                            tiled.right(MAP, i, j, "#"), 
-                            tiled.top(MAP, i, j, "#"), 
-                            tiled.bottom(MAP, i, j, "#"), 
-                            tiled.isOnEdge(MAP, i, j), 
-                            Math.random() * (0.9 - 0.3) + 0.3
-                        )
-                    );
+                    rearBlocks.push(new Checkpoint(
+                        j * blockSize, (i * blockSize) - blockSize * 2,
+                        blockSize, blockSize * 3, "lamp",
+                        tiled.left(MAP, i, j, "#"), tiled.right(MAP, i, j, "#"),
+                        tiled.top(MAP, i, j, "#"), tiled.bottom(MAP, i, j, "#"),
+                        tiled.isOnEdge(MAP, i, j), Math.random() * 0.6 + 0.3
+                    ));
                     break;
                 }
-                
-                
             }
         }
-        if(MAP[i].length > longestX){
-            longestX = MAP[i].length;
-        }
+        if (MAP[i].length > longestX) longestX = MAP[i].length;
     }
-    
-    //fetch the width and height of each level in pixels
-    lvlSizeX = longestX*blockSize;
-    lvlSizeY = MAP.length*blockSize;
-    
-    
-    //lighting setup
-    if(debug.lighting){
+
+    lvlSizeX = longestX * blockSize;
+    lvlSizeY = MAP.length * blockSize;
+
+    MWorld.add(mWorld, mBlockBodies);
+    MWorld.add(mWorld, mCpuBodies); 
+
+    //player body center based in this case
+    mPlayerBody = MBodies.rectangle(
+        player.x + player.w / 2, player.y + player.h / 2,
+        player.w, player.h,
+        { label: 'player', friction: 0, restitution: 0,
+          inertia: Infinity, inverseInertia: 0 }
+    );
+    MWorld.add(mWorld, mPlayerBody);
+
+    //lighting
+    if (debug.lighting) {
         grid = new Grid();
         grid.setSize(blockSize);
         levelArray = Raster.fromBitmap(MAP);
         camera = new Bounds(0, 0, lvlSizeX, lvlSizeY);
-        
-        lighting = new Lighting(grid, 
-            {
-                "-": {
-                    emission: 1,
-                },
-                "L": {
-                    emission: 1,
-                },
-                "#": {
-                    isSolid: true,
-                },
-            }, 
-            {
-                airDecay: 0.9,
-                groundDecay: 0,
-                minLevel: 0,
-            }
+        lighting = new Lighting(grid,
+            { "-": { emission: 1 }, "L": { emission: 1 }, "#": { isSolid: true } },
+            { airDecay: 0.9, groundDecay: 0, minLevel: 0 }
         );
-        
     }
-    
-    
-    //update the world colors and features ever render to enable world switching
-    functions.loadWorld();
-    if(debug.toggleMinimap){
-        minimap.init();
-    }
-});
 
+    functions.loadWorld();
+    if (debug.toggleMinimap) minimap.init();
+});
 //starting position and map using world assembly
 if(firstFrame){
     const startRoomKey = worldAssembly[functions.startPos.row][functions.startPos.col];
     LEVEL = roomTemplates[startRoomKey];
     loadLevelFromString(LEVEL);
     player.x = functions. startPos.x;
-    player.y = functions.startPos. y;
+    player.y = functions.startPos.y;
+    if (mPlayerBody) {
+        MBody.setPosition(mPlayerBody, { 
+            x: player.x + player.w / 2, 
+            y: player.y + player.h / 2 
+        });
+        MBody.setVelocity(mPlayerBody, { 
+            x: 0, 
+            y: 0 
+        });
+    }
     
 }
 
@@ -3697,116 +3624,93 @@ const render = (timestamp) => {try{
                 backdropParticles.add();
                 backdropParticles.run(dt);
             }
-            
-            //before any scaled drawing: clear the whole canvas in device pixels
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = col.bg || "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            
+
             ctx.save();
-                
-                
-                //initiate came
                 cam.run();
-                
-                //shakes.push(new Shake(2));
-                
-                //cam shake loop
-                for(let s in shakes){
-                    shakes[s].active(s);
-                }
-                
-                //seperate particle entities can be run wherever I want to determine their z-index
+
+                for(let s in shakes){ shakes[s].active(s); }
+
                 if(debug.particles){
                     poisonParticles.run(dt);
                     poisonStream.run(dt);
                     flameParticles.run(dt);
                 }
-                
-                //this is a seperate array for blocks that go behind the player. These blocks don't even require their own constructor. They just get pushed into the rearBlocks array as a new Block(). And since they don't collide I can call them behind the player in one frame. Clever, right?
-                for (let i in rearBlocks) {
-                    rearBlocks[i].draw();
-                }
-                
-                //horizontal collisions and player movement
+
+                for (let i in rearBlocks){ rearBlocks[i].draw(); }
+
+                //
                 if(functions.plUpdate){
                     player.moveX(dt);
-                }
-                
-                //collide with mainstream collidable blocks
-                for(let i in collidables){
-                    let col = player.collideX(collidables[i]);
-                    //only collide with one block a frame
-                    if(col){
-                        break;
-                    }
-                }
-                
-                //vertical collisions and player movement
-                if(functions.plUpdate){
                     player.moveY(dt);
                 }
-                
-                for(let i in collidables){
-                    let col = player.collideY(collidables[i]);
-                    //only collide with one block a frame
-                    if(col){
-                        break;
+                for (let i in cpus){ cpus[i].run(player); }
+
+                //sync velocities to Matter bodies before stepping the engine
+                if (mPlayerBody){
+                    MBody.setVelocity(mPlayerBody, { x: player.v.x * dt, y: player.v.y * dt });
+                }
+                for (let i = 0; i < cpus.length; i++){
+                    if (mCpuBodies[i]){
+                        MBody.setVelocity(mCpuBodies[i], { x: cpus[i].v.x * dt, y: cpus[i].v.y * dt });
                     }
                 }
-                
-                //cpu collisions on y axis
-                for(let i in collidables){
-                    for(let j in cpus){
-                        //issue:
-                        let col = cpus[j].collideY(collidables[i]);
-                        //only collide with one block a frame
-                        if(col){
-                            break;
-                        }    
+
+                //step the physics engine
+                mContacts.grounded = false;
+                mContacts.left = false;
+                mContacts.right = false;
+                mContacts.ceiling = false;
+                MEngine.update(mEngine, dtMs);
+
+                //sync posistions and collisions states from matter bodies
+                if (mPlayerBody){
+                    player.x = mPlayerBody.position.x - player.w / 2;
+                    player.y = mPlayerBody.position.y - player.h / 2;
+                    player.collide.top = mContacts.grounded;
+                    player.collide.bottom = mContacts.ceiling;
+                    player.collide.left = mContacts.left;
+                    player.collide.right = mContacts.right;
+                }
+                for (let i = 0; i < cpus.length; i++){
+                    if (mCpuBodies[i]){
+                        cpus[i].x = mCpuBodies[i].position.x - cpus[i].w / 2;
+                        cpus[i].y = mCpuBodies[i].position.y - cpus[i].h / 2;
                     }
                 }
-                
-                for(let cpu of cpus){
-                    for(let block of collidables){
-                        let col = cpu.collideY(block);
-                        if(col) break;
-                    }
-                }
-                
-                //draw the player
-                if(functions.plDisplay){
+
+                //apply collision responses
+                if (mContacts.grounded && player.v.y > 0) player.v.y = 0;
+                if (mContacts.ceiling  && player.v.y < 0) player.v.y = 0;
+
+                //
+                if(functions.plDisplay){ 
                     player.display(dt);
                 }
-                
-                //running this before the blocks allows me to capture the player only when doing a death animation
+
                 functions.execute(player);
-                for (let i in cpus) {
-                    cpus[i].run(player);
+
+                if(debug.particles){ 
+                    snowMovementParticles.run(dt); 
                 }
-                
-                if(debug.particles){
-                    snowMovementParticles.run(dt);
-                }
-                
-                //draw the blocks
-                for (let i in nonCollidables) {
+
+                for (let i in nonCollidables){ 
                     nonCollidables[i].draw();
                 }
-                for (let i in collidables) {
-                    collidables[i].draw();
+                for (let i in collidables){ 
+                    collidables[i].draw(); 
                 }
-                for (let i in cpus) {
-                    cpus[i].draw();
+                for (let i in cpus){ 
+                    cpus[i].draw(); 
                 }
-                
-                //world lighting
-                if(debug.lighting){
+
+                if(debug.lighting){ 
                     updateAndRenderLighting(lighting);
                 }
-                
-                //update the world real time
+
                 functions.updateWorld(dt);
             ctx.restore();
             
@@ -3966,7 +3870,7 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('oncontextmenu', (e) => {
     return true;
 });
-
+ 
 
 
 // get fullscreen icon
