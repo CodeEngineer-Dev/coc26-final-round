@@ -252,8 +252,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
             if (events.KeyD) {
                 this.xv += xAccel * dt;
             }
-            this.x += this.xv * dt;
             this.xv *= Math.pow(friction, dt);
+            this.x += this.xv * dt;
             this.updateHitbox();
             if (this.touching(MSolid, world)) {
                 this.x -= this.xv * dt;
