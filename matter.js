@@ -365,16 +365,19 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
         /** Constructs an instance of MCamera.
          * 
          * @constructor
-         * @param {{ width?: number, height?: number, tileSize?: number }} config 
+         * @param {{ canvas: HTMLCanvasElement, tileSize?: number }} config 
          */
         constructor(config) {
-            const { width, height, tileSize } = config;
-            this.w = width;
-            this.h = height;
+            const { canvas, tileSize } = config;
+            this.canvas = canvas;
             this.tsz = tileSize ?? 20;
             this.viewBox = new MBox(0, 0, 0, 0);
             this.focus(0, 0);
         }
+
+        /** Gets canvas width and height. */
+        get w() { return this.canvas.effectiveWidth ?? this.canvas.width; }
+        get h() { return this.canvas.effectiveHeight ?? this.canvas.height; }
 
         /** Focus the camera at a particular (world) point.
          * 
@@ -453,12 +456,10 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
             this.engine = engine;
             this.canvas = canvas;
             this.ctx = canvas.getContext("2d");
-            this.w = canvas.width;
-            this.h = canvas.height;
             this.tsz = tileSize;
             this.res = resolution;
             this.pixel = tileSize / resolution;
-            this.camera = new MCamera({ width: this.w, height: this.h, tileSize: this.tsz });
+            this.camera = new MCamera({ canvas: this.canvas, tileSize: this.tsz });
         }
 
         /** Renders everything.

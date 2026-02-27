@@ -20,38 +20,68 @@ let displayScale = 1;
 //device pixel ratio
 let dprVal = window.devicePixelRatio || 1;
 
+/**
+ * resizes the canvas to match the window dimensions and scales it based on the device pixel ratio (DPR).
+ * adjusts the internal coordinate system to maintain sharpness on high-DPI displays and
+ * updates the global display scale based on a predefined base resolution (BASE_WIDTH, BASE_HEIGHT)
+ *
+ * @function
+ * @returns {void}
+ */
 function resizeCanvasAndScale() {
-    //CSS size
+    /* 
+        @Judges - This function is used to scale the canvas up to a specified dimension.
+        Making it based on the height of the page only allows me to set it at a perfecct 1:1 aspect ratio.
+        The reason this is so fast is because it scales it up with window.devicePixelRation
+        and uses the built in canvas functions for transformations (setTransform) 
+    */
     const cssW = window.innerWidth;
     const cssH = window.innerHeight;
-    
-    //DPR 
     dprVal = window.devicePixelRatio || 1;
+
+    //calculate the size that maintains aspect ratio
+    const aspectRatio = BASE_WIDTH / BASE_HEIGHT;
+    let canvasDisplayWidth, canvasDisplayHeight;
     
-    //set canvas internal pixels and CSS size
-    canvas.style.width = cssW + "px";
-    canvas.style.height = cssH + "px";
-    canvas.width = Math.round(cssW * dprVal);
-    canvas.height = Math.round(cssH * dprVal);
-    //canvas.position = "absolute";
-    
-    if(window.opener){
-        canvas.style.left = "50%";
-        canvas.style.transform = "translate(-25%, 0)";
-        //canvas.style.border = "red";
+    if (cssW / cssH > aspectRatio) {
+        canvasDisplayHeight = cssH;
+        canvasDisplayWidth = cssH * aspectRatio;
+    } 
+    else {
+        //window is taller than canvas aspect ratio
+        canvasDisplayWidth = cssW;
+        canvasDisplayHeight = cssW / aspectRatio;
     }
-    //compute uniform displayScale relative to 600x600 authoring resolution
-    displayScale = Math.min(cssW / BASE_WIDTH, cssH / BASE_HEIGHT);
 
-    //initiate
-    width = canvas.width / dprVal;
-    height = canvas.height / dprVal;
+    //update wrapper size and position
+    const wrapper = document.getElementById('game-wrapper');
+    if (wrapper) {
+        wrapper.style.width = canvasDisplayWidth + 'px';
+        wrapper.style.height = canvasDisplayHeight + 'px';
+    }
+
+    canvas.style.width = canvasDisplayWidth + "px";
+    canvas.style.height = canvasDisplayHeight + "px";
+    canvas.width = Math.round(canvasDisplayWidth * dprVal);
+    canvas.height = Math.round(canvasDisplayHeight * dprVal);
+    // tracking variables
+    canvas.effectiveWidth = canvasDisplayWidth;
+    canvas.effectiveHeight = canvasDisplayHeight;
+
+    window.console.log(canvas.style.height, canvas.height);
+
+    //update display scale
+    width = canvas.width;
+    height = canvas.height;
+
+    ctx.scale(dprVal, dprVal);
+    ctx.imageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.oImageSmoothingEnabled = false;
+    
+    window.scene = "game";
 }
-//run
+window.addEventListener("resize", resizeCanvasAndScale);
 resizeCanvasAndScale();
-
-window.addEventListener("resize", function() {
-    resizeCanvasAndScale();
-    // if you need to reposition DOM UI elements or recompute minimap, do that here
-    //if (typeof minimap !== 'undefined' && minimap.init) minimap.init();
-});

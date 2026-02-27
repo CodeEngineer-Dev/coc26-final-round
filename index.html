@@ -15,13 +15,15 @@
     </head>
     <body>
         <!--The container for the entire thing-->
-        <div id= "container">
-            <canvas id = "game"></canvas>
-            <div id = "overlay">
-                <div id = "fullscreen-container">
+        <div id="container">
+            <div id="game-wrapper">
+                <canvas id = "game"></canvas>
+            </div>
+            <div id="overlay">
+                <div id="fullscreen-container">
                     <span class='material-icons' id='fullscreen'>fullscreen</span>
                 </div>
-                <p id = "console"></p>
+                <p id="console"></p>
             </div>
         </div>
     </body>
@@ -76,7 +78,7 @@
                 t = tMs / 1000;
                 fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
 
-                ctx.fillRect(0, 0, canvas.width / dprVal, canvas.height / dprVal);
+                ctx.fillRect(0, 0, width, height);
 
                 //run the game based on deltatime
                 engine.tick(t, dt, events);
