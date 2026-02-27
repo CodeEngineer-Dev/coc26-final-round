@@ -36,6 +36,7 @@
     <script type src="vector.js"></script>
     <script type src="particles.js"></script>
     <script type src="userinput.js"></script>
+    <script type src="worldManagement.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
         const engine = MEngine.create({});
@@ -112,21 +113,34 @@
         });
         //engine.createPlayer(0, 0, 16 / 9, 14 / 9, (t, player) => gfx.player.idle[0]);
 
-        const block = (t, block) => gfx.tiles.A.yyyy;
+        // const block = (t, block) => gfx.tiles.A.yyyy;
 
-        engine.world.add(new MSolid(0, 5, 1, 1, block));
-        engine.world.add(new MSolid(1, 5, 1, 1, block));
-        engine.world.add(new MSolid(2, 5, 1, 1, block));
-        engine.world.add(new MSolid(3, 5, 1, 1, block));
-        engine.world.add(new MSolid(4, 5, 1, 1, block));
-        engine.world.add(new MSolid(5, 5, 1, 1, block));
-        engine.world.add(new MSolid(6, 5, 1, 1, block));
-        engine.world.add(new MSolid(7, 5, 1, 1, block));
-        engine.world.add(new MSolid(8, 5, 1, 1, block));
-        engine.world.add(new MSolid(9, 5, 1, 1, block));
-        engine.world.add(new MSolid(9, 4, 1, 1, block));
-        engine.world.add(new MSolid(9, 3, 1, 1, block));
-        
+        // engine.world.add(new MSolid(0, 5, 1, 1, block));
+        // engine.world.add(new MSolid(1, 5, 1, 1, block));
+        // engine.world.add(new MSolid(2, 5, 1, 1, block));
+        // engine.world.add(new MSolid(3, 5, 1, 1, block));
+        // engine.world.add(new MSolid(4, 5, 1, 1, block));
+        // engine.world.add(new MSolid(5, 5, 1, 1, block));
+        // engine.world.add(new MSolid(6, 5, 1, 1, block));
+        // engine.world.add(new MSolid(7, 5, 1, 1, block));
+        // engine.world.add(new MSolid(8, 5, 1, 1, block));
+        // engine.world.add(new MSolid(9, 5, 1, 1, block));
+        // engine.world.add(new MSolid(9, 4, 1, 1, block));
+        // engine.world.add(new MSolid(9, 3, 1, 1, block));
+         
+        // const world = new WorldManager(engine, roomTemplates, worldAssembly);
+        // world.loadRoom(0, 0);
+        // world.placePlayer(engine.player, 0, 0); 
+
+        const solidTexturer  = (t, obj) => gfx.tiles.A.yyyy;
+        const hazardTexturer = (t, obj) => gfx.tiles.A.nnnn;
+
+        const builder = new WorldBuilder(engine, 1, solidTexturer, hazardTexturer);
+        const world = new WorldManager(engine, roomTemplates, worldAssembly, builder);
+
+        world.loadRoom(0, 0);
+        world.placePlayer(engine.player, 10, 12); 
+
         let lastTime = performance.now();
         let firstTime = performance.now();
         let frameCount = 0, dtMs, dt, tMs, t, fps;
@@ -154,6 +168,7 @@
 
                 ctx.save();
                     ctx.translate(shake.x, shake.y);
+                    world.execute(engine.player);
                     engine.tick(t, dt, events);
                 ctx.restore();
                 //frameCount
