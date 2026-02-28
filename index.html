@@ -134,7 +134,8 @@
         
         const tileMap = {
             '#': { type: MSolid, tileset: gfx.tiles.A },
-            '@': { type: MSolid, tileset: gfx.tiles.a },
+            '@': { type: MDecorative, tileset: gfx.tiles.a },
+            'B': { type: MSolid, tileset: gfx.tiles.B },
         };
 
         const builder = new WorldBuilder(engine, 1, tileMap);
