@@ -583,27 +583,34 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
             this.pixel = tileSize / resolution;
             this.camera = new MCamera({ canvas: this.canvas, tileSize: this.tsz });
         }
-
-        /** Renders everything.
-         * 
-         * @returns {void}
-         */
-        render(t) {
+        
+        /** Renders everything except the player */
+        renderScene(t) {
             const rb = this.engine.roomBounds;
             if (rb) {
                 this.camera.focusPlayerConstrained(this.engine.player, rb.w, rb.h);
             } else {
                 this.camera.focusPlayer(this.engine.player);
             }
-
-            // Keep pixel size in sync with whatever tsz the camera settled on
             this.pixel = this.camera.tsz / this.res;
-
             this.engine.world.iterate(obj => {
+                if (obj instanceof MPlayer) return; // skip player — fixes clip in snapshot
                 if (this.camera.inView(obj)) obj.render(this.ctx, this.camera, t, this.pixel);
             });
+        }
 
-            if (this.debug) {
+        /** Renders only the player */
+        renderPlayer(t) {
+            const player = this.engine.player;
+            if (this.camera.inView(player))
+                player.render(this.ctx, this.camera, t, this.pixel);
+        }
+
+        /** */
+        render(t) {
+            this.renderScene(t);
+            this.renderPlayer(t);
+            if (this.debug) { 
                 this.engine.world.iterate(obj => {
                     const hbox = obj.hbox ?? obj.dbox;
                     if (!hbox) return;

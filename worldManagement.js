@@ -220,6 +220,11 @@ class WorldManager {
         return !!this._pending;
     }
 
+    getPendingDir() {
+        if (!this._pending) this._detectEdge(this.engine.player);
+        return this._pending?.dir ?? null;
+    }
+
     execute(player) {
         if (!this._pending) this._detectEdge(player);
         if (this._pending) {

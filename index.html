@@ -65,37 +65,77 @@
                 }
             }
         }
-        
+
         class RoomTransition {
             constructor() {
                 this.snap = document.createElement('canvas');
                 this.active = false;
-                this.dir = null;
-                this.t = 0;
+                this.dir= null;
+                this.progress = 0;
+                this.elapsed = 0;
+                this.duration = 0.3;
             }
 
-            capture(canvas) {
-                this.snap.width  = canvas.width;
-                this.snap.height = canvas.height;
-                this.snap.getContext('2d').drawImage(canvas, 0, 0);
+            capture(sourceCanvas) {
+                this.snap.width= sourceCanvas.width;
+                this.snap.height = sourceCanvas.height;
+                this.snap.getContext('2d').drawImage(sourceCanvas, 0, 0);
             }
 
-            start(dir) { this.active = true; this.dir = dir; this.t = 0; }
+            start(dir) {
+                this.active = true;
+                this.dir = dir;
+                this.elapsed = 0;
+                this.progress = 0;
+            }
 
-            render(ctx, dt) {
+            tick(dt) {
                 if (!this.active) return;
-                this.t += (1 - this.t) * 10 * dt; // exponential ease, same trick as Capture
+                this.elapsed += dt;
+                this.progress = Math.min(this.elapsed / this.duration, 1);
+                if (this.progress >= 1) this.active = false;
+            }
+            
+            //cubic ease-out instead of lerp because I can and it flows nicer
+            get eased() { 
+                return 1 - Math.pow(1 - this.progress, 3);
+            }
 
-                const w = this.snap.width, h = this.snap.height;
-                let ox = 0, oy = 0;
+            //where the new room starts (off-screen) and slides to (0,0)
+            getNewOffset(w, h) {
+                const p = this.eased;
                 switch (this.dir) {
-                    case 'right':  ox = -w * this.t; break;
-                    case 'left':   ox =  w * this.t; break;
-                    case 'bottom': oy = -h * this.t; break;
-                    case 'top':    oy =  h * this.t; break;
+                    case 'right':
+                        return { x:  w * (1 - p), y: 0 };
+                    case 'left':
+                        return { x: -w * (1 - p), y: 0 };
+                    case 'bottom': 
+                        return { x: 0, y:  h * (1 - p) };
+                    case 'top':
+                        return { x: 0, y: -h * (1 - p) };
                 }
-                ctx.drawImage(this.snap, ox, oy);
-                if (this.t > 0.99) this.active = false;
+                return { x: 0, y: 0 };
+            }
+
+            //where the old room slides to (away from 0,0)
+            getOldOffset(w, h) {
+                const p = this.eased;
+                switch (this.dir) {
+                    case 'right':  
+                        return { x: -w * p, y: 0 };
+                    case 'left':   
+                        return { x:  w * p, y: 0 };
+                    case 'bottom': 
+                        return { x: 0, y: -h * p };
+                    case 'top':    
+                        return { x: 0, y:  h * p };
+                }
+                return { x: 0, y: 0 };
+            }
+
+            drawOldRoom(ctx) {
+                const { x, y } = this.getOldOffset(this.snap.width, this.snap.height);
+                ctx.drawImage(this.snap, x, y);
             }
         }
 
@@ -181,31 +221,55 @@
                 t = tMs / 1000;
                 fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
                 
-                //snapshot must happen before the clear
-                if (world.hasPending()) roomTransition.capture(canvas);
+                //peek at whether a room change is about to happen
+                const pendingDir = world.getPendingDir();
 
+                //iif so: render the old room (no player!) into the snapshot
+                if (pendingDir) {
+                    ctx.fillStyle = "rgb(100, 100, 100)";
+                    ctx.fillRect(0, 0, width, height);
+                    engine.renderer.renderScene(t);
+                    roomTransition.capture(canvas);
+                }
+
+                //clear for real this frame
                 ctx.fillStyle = "rgb(100, 100, 100)";
                 ctx.fillRect(0, 0, width, height);
 
+                //execute room load (uses _pending already set above)
+                world.execute(engine.player);
+                if (pendingDir) roomTransition.start(pendingDir);
+
+                //tick transition an' shake
+                roomTransition.tick(dt);
                 shakes.forEach((s, i) => s.active(i));
 
                 ctx.save();
                 ctx.translate(shake.x, shake.y);
-                world.execute(engine.player);
 
-                //freeze player during slide and render-only
                 if (roomTransition.active) {
-                    engine.renderer.render(t);
+                    const { x: nx, y: ny } = roomTransition.getNewOffset(width, height);
+
+                    //new room slides in from off-screen
+                    ctx.save();
+                    ctx.translate(nx, ny);
+                    engine.renderer.renderScene(t);
+                    ctx.restore(); 
+
+                    //old room slides out drawn on top so seam is hidden
+                    roomTransition.drawOldRoom(ctx); 
+
+                    //player always on top, stationary (rooms slide around them)
+                    engine.renderer.renderPlayer(t);
+
+                    //physics keeps running during slide
+                    engine.player.tick(dt, events);
                 } else {
                     engine.tick(t, dt, events);
                 }
 
-                roomTransition.render(ctx, dt);
                 ctx.restore();
-                //frameCount
-                frameCount ++;
-                
-                Object.assign(eventsPrev, events);
+                frameCount++;
             } catch (e) {
                 console.error("Main loop error\n" + e.stack);
             }
