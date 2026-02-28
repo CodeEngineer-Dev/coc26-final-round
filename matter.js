@@ -432,6 +432,36 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                 this.state = Math.abs(this.xv) > 0.5 ? 'run' : 'idle';
             }
         }
+
+        /** Renders the thing
+         * 
+         * @param {CanvasRenderingContext2D} ctx 
+         * @param {MCamera} camera 
+         * @param {number} t
+         * @param {number} pixel
+         * @returns {void} 
+         */
+        render(ctx, camera, t, pixel) {
+            super.render(ctx, camera, t, pixel);
+            this.ball?.render?.(ctx, camera, t, pixel);
+            if (this.dragging) {
+                const { x, y } = camera.worldToScreen(
+                    this.x + this.w / 2,
+                    this.y + this.h / 2
+                );
+                ctx.save();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(
+                    x + this.dragX - this.dragInitX,
+                    y + this.dragY - this.dragInitY
+                );
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
         
     }
 
