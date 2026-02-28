@@ -65,6 +65,39 @@
                 }
             }
         }
+        
+        class RoomTransition {
+            constructor() {
+                this.snap = document.createElement('canvas');
+                this.active = false;
+                this.dir = null;
+                this.t = 0;
+            }
+
+            capture(canvas) {
+                this.snap.width  = canvas.width;
+                this.snap.height = canvas.height;
+                this.snap.getContext('2d').drawImage(canvas, 0, 0);
+            }
+
+            start(dir) { this.active = true; this.dir = dir; this.t = 0; }
+
+            render(ctx, dt) {
+                if (!this.active) return;
+                this.t += (1 - this.t) * 10 * dt; // exponential ease, same trick as Capture
+
+                const w = this.snap.width, h = this.snap.height;
+                let ox = 0, oy = 0;
+                switch (this.dir) {
+                    case 'right':  ox = -w * this.t; break;
+                    case 'left':   ox =  w * this.t; break;
+                    case 'bottom': oy = -h * this.t; break;
+                    case 'top':    oy =  h * this.t; break;
+                }
+                ctx.drawImage(this.snap, ox, oy);
+                if (this.t > 0.99) this.active = false;
+            }
+        }
 
         //make my life less stressful than it already is
         const addShake = (power) => shakes.push(new Shake(power));
@@ -144,6 +177,9 @@
         world.loadRoom(0, 0);
         world.placePlayer(engine.player, 10, 12);
 
+        const roomTransition = new RoomTransition();
+        world.transition = roomTransition;
+
         let lastTime = performance.now();
         let firstTime = performance.now();
         let frameCount = 0, dtMs, dt, tMs, t, fps;
@@ -165,6 +201,9 @@
                 t = tMs / 1000;
                 fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
                 
+                //snapshot must happen before the clear
+                if (world.hasPending()) roomTransition.capture(canvas);
+
                 ctx.fillStyle = "rgb(100, 100, 100)";
                 ctx.fillRect(0, 0, width, height);
 
@@ -173,9 +212,17 @@
                 ctx.save();
                     ctx.translate(shake.x, shake.y);
                     world.execute(engine.player);
-                    engine.tick(t, dt, events);
+
+                    //freeze player during slide and render-only
+                    if (roomTransition.active) {
+                        engine.renderer.render(t);
+                    } else {
+                        engine.tick(t, dt, events);
+                    }
+
+                    roomTransition.render(ctx, dt);
                 ctx.restore();
-                //frameCount
+
                 frameCount++;
             } catch (e) {
                 console.error("Main loop error\n" + e.stack);

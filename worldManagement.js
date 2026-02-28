@@ -83,7 +83,7 @@ const roomTemplates = {
 
 };
 
-const worldAssembly = [
+const worldAssembly = [ 
     "AB",
     "CD",
 ];
@@ -210,11 +210,18 @@ class WorldManager {
         player.yv = 0;
         player.updateHitbox?.();
     }
+    
+    hasPending() {
+        if (!this._pending) this._detectEdge(this.engine.player);
+        return !!this._pending;
+    }
 
     execute(player) {
         if (!this._pending) this._detectEdge(player);
         if (this._pending) {
+            const dir = this._pending.dir;
             this._doTransition(player);
+            this.transition?.start(dir);
             this._pending = null;
         }
     }
