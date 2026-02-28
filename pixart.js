@@ -1,4 +1,4 @@
-const palette = {
+var palette = {
     ".": [0, 0, 0, 255],
     "a": [26, 18, 18, 255],
     "b": [41, 29, 29, 255],
@@ -8,13 +8,13 @@ const palette = {
     "f": [103, 0, 0, 255],
     "g": [138, 8, 8, 255],
     "h": [168, 0, 0, 255],
-    "i": [214, 205, 191, 255], 
+    "i": [214, 205, 191, 255],
     "j": [31, 54, 28, 255],
     "k": [46, 77, 43, 255],
     "l": [60, 95, 56, 255],
 };
 const gfxData = {
-        player: {
+    player: {
 		idle: [
 			[
 				'----------------',
@@ -2744,19 +2744,26 @@ class Spritesheet {
      * 
      * @param {number[][]} palette 
      * @param {Object} sprites 
-     * @returns {Object|SpriteRef}
+     * @returns {Object|SpriteRef[]|SpriteRef}
      */
     #internalStoreMultipleImageData(imageData, palette, sprites) {
-        const spriteRefs = {};
         if (Array.isArray(sprites) && typeof sprites[0] === "string") {
             // we've hit a sprite, and now, we can store image data
             // (sprites is singular here lol)
             return this.#internalStoreImageData(imageData, palette, sprites);
+        } else if (Array.isArray(sprites)) {
+            const spriteRefs = [];
+            for (const sprite of sprites) {
+                spriteRefs.push(this.#internalStoreMultipleImageData(imageData, palette, sprite));
+            }
+            return spriteRefs;
+        } else {
+            const spriteRefs = {};
+            for (const i in sprites) {
+                spriteRefs[i] = this.#internalStoreMultipleImageData(imageData, palette, sprites[i]);
+            }
+            return spriteRefs;
         }
-        for (const i in sprites) {
-            spriteRefs[i] = this.#internalStoreMultipleImageData(imageData, palette, sprites[i]);
-        }
-        return spriteRefs;
     }
 
     /** Stores a bunch of sprites in the spritesheet at once. It is more

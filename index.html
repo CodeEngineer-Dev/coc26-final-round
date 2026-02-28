@@ -79,7 +79,7 @@
             groundpoundimpact: 10,
         };
 
-        engine.createPlayer(0, 0, 1.0, 1.4, (t, player) => { 
+        engine.createPlayer(0, 0, 0.97, 1.4, (t, player) => { 
             const state = player.state ?? 'idle';
             const frames = gfx.player[state] ?? gfx.player.idle;
             const fps = ANIM_FPS[state] ?? 6;
@@ -111,26 +111,6 @@
             frame = Math.max(0, Math.min(count - 1, frame));
             return frames[frame];
         });
-        //engine.createPlayer(0, 0, 16 / 9, 14 / 9, (t, player) => gfx.player.idle[0]);
-
-        // const block = (t, block) => gfx.tiles.A.yyyy;
-
-        // engine.world.add(new MSolid(0, 5, 1, 1, block));
-        // engine.world.add(new MSolid(1, 5, 1, 1, block));
-        // engine.world.add(new MSolid(2, 5, 1, 1, block));
-        // engine.world.add(new MSolid(3, 5, 1, 1, block));
-        // engine.world.add(new MSolid(4, 5, 1, 1, block));
-        // engine.world.add(new MSolid(5, 5, 1, 1, block));
-        // engine.world.add(new MSolid(6, 5, 1, 1, block));
-        // engine.world.add(new MSolid(7, 5, 1, 1, block));
-        // engine.world.add(new MSolid(8, 5, 1, 1, block));
-        // engine.world.add(new MSolid(9, 5, 1, 1, block));
-        // engine.world.add(new MSolid(9, 4, 1, 1, block));
-        // engine.world.add(new MSolid(9, 3, 1, 1, block));
-         
-        // const world = new WorldManager(engine, roomTemplates, worldAssembly);
-        // world.loadRoom(0, 0);
-        // world.placePlayer(engine.player, 0, 0); 
         
         const tileMap = {
             '#': { type: MSolid, tileset: gfx.tiles.A },
@@ -171,12 +151,14 @@
                 shakes.forEach((s, i) => s.active(i));
 
                 ctx.save();
-                    ctx.translate(shake.x, shake.y);
-                    world.execute(engine.player);
-                    engine.tick(t, dt, events);
+                ctx.translate(shake.x, shake.y);
+                world.execute(engine.player);
+                engine.tick(t, dt, events);
                 ctx.restore();
                 //frameCount
-                frameCount++;
+                frameCount ++;
+                
+                Object.assign(eventsPrev, events);
             } catch (e) {
                 console.error("Main loop error\n" + e.stack);
             }

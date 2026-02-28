@@ -57,6 +57,8 @@ canvas:focus {
 
 #container canvas, #overlay {
     position: absolute;
+    top: 0;
+    left: 0;
 }
 
 #fullscreen-container {

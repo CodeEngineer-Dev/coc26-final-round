@@ -279,9 +279,10 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
             if (this.touching(MSolid, world)) {
                 this.grounded = true;
                 this.y -= this.yv * dt;
-                this.yv = 0;
-                if (events.KeyW) {
+                if (events.KeyW && this.yv > 0) {
                     this.yv = -jump;
+                } else {
+                    this.yv = 0;
                 }
                 this.updateHitbox();
             }
@@ -291,6 +292,30 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
                 this.health = this.maxHealth;
                 this.updateHitbox();
             }
+        }
+    }
+
+    class MBall extends MEntity {
+        constructor(player) {
+            super(
+                player.x + player.w / 2,
+                player.y + player.h / 2,
+                0, 0, 1, (t, object) => gfx.player.idle[0]
+            );
+            this.x = player.x + player.w / 2;
+            this.y = player.y + player.h / 2;
+            this.xv = 0;
+            this.yv = 0;
+        }
+        render(ctx, camera, t, pixel) {
+            const { x, y } = camera.worldToScreen(this.x, this.y);
+            const sprite = this.texturer(t, this);
+    
+            //offset so sprite is centered on hitbox
+            const offsetX = (this.w * camera.tsz - sprite.w * pixel) / 2;
+            const offsetY = (this.h * camera.tsz - sprite.h * pixel) / 2;
+
+            sprite.draw(ctx, x + offsetX, y + offsetY, pixel, this.facing ?? 1);
         }
     }
 
@@ -344,6 +369,10 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEngine } = (() => {
                 : events;
 
             super.tick(dt, physEvents);
+
+            if (events.Mouse) {
+                this.engine.world.add(new MBall(this), 100);
+            }
 
             if (events.KeyA) this.facing = -1;
             if (events.KeyD) this.facing = 1;

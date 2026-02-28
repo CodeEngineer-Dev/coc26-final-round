@@ -10,6 +10,8 @@ const roomTemplates = {
         "#        ###       #",
         "#                  #",
         "#   ###            #",
+        "#   #              #",
+        "#             ##   #",
         "#                  #",
         "#                  #",
         "#       @      ##  #",
@@ -206,6 +208,8 @@ class WorldManager {
     placePlayer(player, x, y) {
         player.x = x;
         player.y = y;
+        player.sx = x;
+        player.sy = y;
         player.xv = 0;
         player.yv = 0;
         player.updateHitbox?.();

@@ -68,8 +68,6 @@ function resizeCanvasAndScale() {
     canvas.effectiveWidth = canvasDisplayWidth;
     canvas.effectiveHeight = canvasDisplayHeight;
 
-    window.console.log(canvas.style.height, canvas.height);
-
     //update display scale
     width = canvas.width;
     height = canvas.height;
