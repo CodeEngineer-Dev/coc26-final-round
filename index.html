@@ -37,6 +37,8 @@
     <script type src="particles.js"></script>
     <script type src="userinput.js"></script>
     <script type src="worldManagement.js"></script>
+    <script type src="pathfinding.js"></script>
+    <script type src="enemies.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
         const engine = MEngine.create({});
@@ -188,17 +190,59 @@
         const tileMap = {
             '#': { type: MSolid, tileset: gfx.tiles.A },
             '@': { type: MDecorative, tileset: gfx.tiles.a },
-            'B': { type: MSolid, tileset: gfx.tiles.B },
+            'B': { type: MSolid, tileset: gfx.tiles.B }, 
         };
 
         const builder = new WorldBuilder(engine, 1, tileMap);
         const world   = new WorldManager(engine, roomTemplates, worldAssembly, builder);
 
-        world.loadRoom(0, 0);
+        world.loadRoom(0, 0); 
+
+
+        const blobPositions = [
+            { x: 2, y: 14, v: 'g1' }, 
+            { x: 11, y: 6,  v: 'r1' },
+        ];
+        for (const { x, y, v } of blobPositions) {
+            engine.world.add(new MBlob(x, y, v), 1);
+        }
+
         world.placePlayer(engine.player, 10, 12);
 
         const roomTransition = new RoomTransition();
         world.transition = roomTransition;
+
+        /** HUD
+         *
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {MPlayer}  player
+         * @param {number}   pixel - engine.renderer.pixel
+         */
+        function renderHUD(ctx, player, pixel) {
+            const MAX_HEARTS = 3;
+
+            const filledHearts = Math.ceil((player.health / player.maxHealth) * MAX_HEARTS);
+
+            const heartSprite  = gfx.player.heartFull;
+            const heartW = heartSprite.w * pixel;
+            const heartH = heartSprite.h * pixel;
+            const gap = Math.round(pixel * 1.5);
+            const marginX = Math.round(pixel * 2);
+            const marginY = Math.round(pixel * 2);
+
+            for (let i = 0; i < MAX_HEARTS; i++) {
+                const sprite = i < filledHearts
+                    ? gfx.player.heartFull
+                    : gfx.player.heartEmpty;
+
+                sprite.draw(
+                    ctx,
+                    marginX + i * (heartW + gap),
+                    marginY,
+                    pixel
+                );
+            }
+        }
 
         let lastTime = performance.now();
         let firstTime = performance.now();
@@ -266,6 +310,8 @@
                     engine.player.tick(dt, events);
                 } else {
                     engine.tick(t, dt, events);
+                    renderHUD(ctx, engine.player, engine.renderer.pixel);
+                    
                 }
 
                 ctx.restore();

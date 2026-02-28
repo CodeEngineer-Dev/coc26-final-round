@@ -199,10 +199,10 @@ class WorldManager {
         this.roomW = widthUnits;
         this.roomH = heightUnits;
 
-        this.engine.roomBounds = { 
-            w: this.roomW, 
-            h: this.roomH 
-        };
+        this.engine.roomBounds = { w: this.roomW, h: this.roomH };
+
+        //build or even rebuild nav graph for the new room
+        this.engine.graph = new PlatformGraph(bitmap, this.builder.tileMap);
     }
 
     placePlayer(player, x, y) {
