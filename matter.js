@@ -439,7 +439,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
          * @param {MCamera} camera 
          * @param {number} t
          * @param {number} pixel
-         * @returns {void} 
+         * @returns {void}
          */
         render(ctx, camera, t, pixel) {
             super.render(ctx, camera, t, pixel);
