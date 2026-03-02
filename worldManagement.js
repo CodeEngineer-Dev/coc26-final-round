@@ -93,14 +93,37 @@ const worldAssembly = [
 
 //autotiling!
 function chooseTile(bitmap, row, col, tileMap) {
-    const solid = (r, c) => (bitmap[r]?.[c] ?? ' ') in tileMap;
-    const key = (solid(row - 1, col) ? 'n' : 'y') +
-        (solid(row, col + 1) ? 'n' : 'y') +
-        (solid(row + 1, col) ? 'n' : 'y') +
-        (solid(row, col - 1) ? 'n' : 'y');
     const ch = bitmap[row][col];
+    
+    const solid = (r, c) => {
+        if (r < 0 || r >= bitmap.length) return true;
+        if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return true;
+        return bitmap[r][c] === ch;
+    };
+
+    //diagonals treat OOB as empty attempt to fix corners :/
+    const solidDiag = (r, c) => {
+        if (r < 0 || r >= bitmap.length) return false;
+        if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return false;
+        return bitmap[r][c] === ch;
+    };
+
+    const N = solid(row-1, col);
+    const E = solid(row, col+1);
+    const S = solid(row+1, col);
+    const W = solid(row, col-1);
+
+    const NE = N && E && solidDiag(row-1, col+1);
+    const SE = S && E && solidDiag(row+1, col+1);
+    const SW = S && W && solidDiag(row+1, col-1);
+    const NW = N && W && solidDiag(row-1, col-1);
+
+    const key8 = (N ?'n':'y') + (NE?'n':'y') + (E ?'n':'y') + (SE?'n':'y')
+               + (S ?'n':'y') + (SW?'n':'y') + (W ?'n':'y') + (NW?'n':'y');
+    const key4 = key8[0] + key8[2] + key8[4] + key8[6];
+
     const def = tileMap[ch];
-    return def?.tileset?.[key] ?? null;
+    return def?.tileset?.[key8] ?? def?.tileset?.[key4] ?? null;
 }
 
 
@@ -131,12 +154,37 @@ class WorldBuilder {
                 if (!def) continue;
 
                 //pick sprite first before constructuing object
-                const solid = (r, c) => (bitmap[r]?.[c] ?? ' ') in this.tileMap;
-                const key = (solid(row - 1, col) ? 'n' : 'y') +
-                    (solid(row, col + 1) ? 'n' : 'y') +
-                    (solid(row + 1, col) ? 'n' : 'y') +
-                    (solid(row, col - 1) ? 'n' : 'y');
-                const sprite = def.tileset[key] ?? def.tileset['yyyy'];
+                const solid = (r, c) => {
+                    if (r < 0 || r >= bitmap.length) return true;
+                    if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return true;
+                    return bitmap[r][c] === ch;
+                };
+
+                //diagonals treat out-of-bounds as empty, not solid
+                const solidDiag = (r, c) => {
+                    if (r < 0 || r >= bitmap.length) return false;
+                    if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return false;
+                    return bitmap[r][c] === ch;
+                };
+
+                const N  = solid(row-1, col);
+                const E  = solid(row,col+1);
+                const S  = solid(row+1, col);
+                const W  = solid(row, col-1);
+
+                const NE = N && E && solidDiag(row-1, col+1);
+                const SE = S && E && solidDiag(row+1, col+1);
+                const SW = S && W && solidDiag(row+1, col-1);
+                const NW = N && W && solidDiag(row-1, col-1);
+                const key8 = (N  ? 'n' : 'y') + (NE ? 'n' : 'y')
+                        + (E  ? 'n' : 'y') + (SE ? 'n' : 'y')
+                        + (S  ? 'n' : 'y') + (SW ? 'n' : 'y')
+                        + (W  ? 'n' : 'y') + (NW ? 'n' : 'y');
+
+                //cardinals only, for tilesets that don't have diagonal variants
+                const key4 = key8[0] + key8[2] + key8[4] + key8[6];
+
+                const sprite = def.tileset[key8] ?? def.tileset[key4] ?? def.tileset['yyyy'];
 
                 if (!sprite) {
                     //remove later

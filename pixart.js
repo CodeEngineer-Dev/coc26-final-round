@@ -2783,29 +2783,34 @@ class Spritesheet {
 
 function generateAutoTileset(interior, seam = '.', corner = '-') {
     const variants = {};
-    for (const top of ['y', 'n'])
-    for (const right of ['y', 'n'])
-    for (const bottom of ['y', 'n'])
-    for (const left of ['y', 'n']) {
-        const key = top + right + bottom + left;
-        const rows = interior.map(r => r.split(''));
-        const W = rows[0].length;
-        const H = rows.length;
-        if (top === 'y') for (let c = 0; c < W; c++) rows[0][c] = seam;
-        if (bottom === 'y') for (let c = 0; c < W; c++) rows[H-1][c] = seam;
-        if (right === 'y') for (let r = 0; r < H; r++) rows[r][W-1] = seam;
-        if (left === 'y') for (let r = 0; r < H; r++) rows[r][0] = seam;
-        if (top === 'y' && left  === 'y') rows[0][0] = corner;
-        if (top === 'y' && right === 'y') rows[0][W-1] = corner;
-        if (bottom === 'y' && left  === 'y') rows[H-1][0] = corner;
-        if (bottom === 'y' && right === 'y') rows[H-1][W-1] = corner;
-        if (key === 'nnnn') {
-            for (let c = 0; c < W; c++) { rows[0][c] = seam; rows[H-1][c] = seam; }
-            for (let r = 0; r < H; r++) { rows[r][0] = seam; rows[r][W-1] = seam; }
-            rows[0][0] = corner; rows[0][W-1] = corner;
-            rows[H-1][0] = corner; rows[H-1][W-1] = corner;
+    for (const N of ['y', 'n'])
+    for (const E of ['y', 'n'])
+    for (const S of ['y', 'n'])
+    for (const W of ['y', 'n']) {
+        const neOpts = (N==='n' && E==='n') ? ['y','n'] : ['y'];
+        const seOpts = (S==='n' && E==='n') ? ['y','n'] : ['y'];
+        const swOpts = (S==='n' && W==='n') ? ['y','n'] : ['y'];
+        const nwOpts = (N==='n' && W==='n') ? ['y','n'] : ['y'];
+
+        for (const NE of neOpts)
+        for (const SE of seOpts)
+        for (const SW of swOpts)
+        for (const NW of nwOpts) {
+            const key = N + NE + E + SE + S + SW + W + NW;
+            const rows = interior.map(r => r.split(''));
+            const H = rows.length, Ww = rows[0].length;
+
+            if (N === 'n') for (let c = 0; c < Ww; c++) rows[0][c] = seam;
+            if (S === 'n') for (let c = 0; c < Ww; c++) rows[H-1][c] = seam;
+            if (E === 'n') for (let r = 0; r < H; r++) rows[r][Ww-1] = seam;
+            if (W === 'n') for (let r = 0; r < H; r++) rows[r][0] = seam;
+            if (N==='n' && W==='n') rows[0][0] = NW==='n' ? corner : seam;
+            if (N==='n' && E==='n') rows[0][Ww-1] = NE==='n' ? corner : seam;
+            if (S==='n' && W==='n') rows[H-1][0] = SW==='n' ? corner : seam;
+            if (S==='n' && E==='n') rows[H-1][Ww-1] = SE==='n' ? corner : seam;
+
+            variants[key] = rows.map(r => r.join(''));
         }
-        variants[key] = rows.map(r => r.join(''));
     }
     return variants;
 }
