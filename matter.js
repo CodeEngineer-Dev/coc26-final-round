@@ -1109,7 +1109,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             
             //tick every enemy each frame
             this.world.iterate(obj => {
-                if (obj instanceof MEnemy) obj.tick(dt);
+                if (obj !== this.player && typeof obj.tick === 'function') obj.tick(dt);
             });
         }
     }

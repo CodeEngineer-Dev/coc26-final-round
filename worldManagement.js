@@ -17,9 +17,9 @@ const roomTemplates = {
         "#       @      ##  #",
         "#       @@@@       #",
         "#  ###              ",
-        "#        e    @     ",
-        "#   BBBB      @@@   ",
-        "#     BB            ",
+        "#        e          ",
+        "#   BBBB            ",
+        "#     BB      K     ",
         "####################",
     ],
 
@@ -256,7 +256,7 @@ class WorldManager {
             for (let row = 0; row < bitmap.length; row++) {
                 for (let col = 0; col < bitmap[row].length; col++) {
                     const ch = bitmap[row][col];
-                    if (ch === 'E' || ch === 'e') {
+                    if (ch === 'E' || ch === 'e' || ch === 'K') {
                         this.onEnemySpawn(ch, col * this.builder.blockSize, row * this.builder.blockSize);
                     }
                 }
@@ -368,5 +368,66 @@ class WorldManager {
                 break;
             }
         }
+    }
+}
+
+//you don't know me son
+class MCheckpoint extends MDecorative {
+    static ACTIVATE_RADIUS = 3;
+    static LIGHT_UP_DURATION = 0.7;
+    static ANIM_FPS = 6;
+
+    constructor(x, y) {
+        super(x, y, 2, 4, (t, self) => {
+            if (self.state === 'lighting') {
+                const frames = gfx.props.misc.totemLightUp;
+                const frame = Math.min(
+                    frames.length - 1,
+                    Math.floor(self.stateTime / MCheckpoint.LIGHT_UP_DURATION * frames.length)
+                );
+                return frames[frame];
+            }
+            if (self.state === 'on') {
+                const frames = gfx.props.misc.totemOn;
+                return frames[Math.floor(t * MCheckpoint.ANIM_FPS) % frames.length];
+            }
+            return gfx.props.misc.totemOff[0];
+        });
+        this.state = 'off';
+        this.stateTime = 0;
+    }
+
+    tick(dt) {
+        this.stateTime += dt;
+        const player = this.engine?.player;
+        if (!player) return;
+
+        if (this.state === 'off') {
+            const dx = (player.x + player.w / 2) - this.x;
+            const dy = (player.y + player.h / 2) - this.y;
+            if (Math.sqrt(dx * dx + dy * dy) <= MCheckpoint.ACTIVATE_RADIUS) {
+                this._activate(player);
+            }
+        } else if (this.state === 'lighting' && this.stateTime >= MCheckpoint.LIGHT_UP_DURATION) {
+            this.state = 'on';
+            this.stateTime = 0;
+        }
+    }
+
+    _activate(player) {
+        //turn off every other checkpoint in the world
+        this.engine.world.iterate(obj => {
+            if (obj instanceof MCheckpoint && obj !== this) {
+                obj.state = 'off';
+                obj.stateTime = 0;
+            }
+        });
+
+        this.state = 'lighting';
+        this.stateTime = 0;
+
+        //reposition the player's respawn point to the base of this totem
+        player.sx = this.x + 1 - player.w / 2;
+        player.sy = this.y + 4  - player.h;
     }
 }

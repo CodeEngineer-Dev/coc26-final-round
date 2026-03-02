@@ -195,10 +195,22 @@
 
         const builder = new WorldBuilder(engine, 1, tileMap);
         const world   = new WorldManager(engine, roomTemplates, worldAssembly, builder);
-
+        
+        //for those of you who play clash royale -> heheheha
         world.onEnemySpawn = (type, x, y) => {
-            const variant = type === 'E' ? 'g2' : 'g1';
-            engine.world.add(new MBlob(x, y, variant), 1);
+            if (type === 'E') { 
+                engine.world.add(new MBlob(x, y, 'g2'), 1); 
+                return;
+             }
+            if (type === 'e') { 
+                engine.world.add(new MBlob(x, y, 'g1'), 1); 
+                return; 
+            }
+
+            if (type === 'K') { 
+                engine.world.add(new MCheckpoint(x, y - 3), 0); 
+                return; 
+            }
         };
 
         world.loadRoom(0, 0);
