@@ -736,117 +736,117 @@ const gfxData = {
                 "ccccccccc",
                 "ddddcdddd",
             ],
-            ynnn: [
-                ".........",
-                "ccccccccc",
-                "dcddddddd",
-                "dcddddddd",
-                "ccccccccc",
-                "dddddddcd",
-                "dddddddcd",
-                "ccccccccc",
-                "ddddcdddd",
-            ],
-            nynn: [
-                "ddddcddc.",
-                "cccccccc.",
-                "dcdddddc.",
-                "dcdddddc.",
-                "cccccccc.",
-                "dddddddc.",
-                "dddddddc.",
-                "cccccccc.",
-                "ddddcddc.",
-            ],
-            nnyn: [
-                "ddddcdddd",
-                "ccccccccc",
-                "dcddddddd",
-                "dcddddddd",
-                "ccccccccc",
-                "dddddddcd",
-                "dddddddcd",
-                "ccccccccc",
-                ".........",
-            ],
-            nnny: [
-                ".cddcdddd",
-                ".cccccccc",
-                ".cddddddd",
-                ".cddddddd",
-                ".cccccccc",
-                ".cdddddcd",
-                ".cdddddcd",
-                ".cccccccc",
-                ".cddcdddd",
-            ],
-            yynn: [
-                "........-",
-                "cccccccc.",
-                "dcdddddc.",
-                "dcdddddc.",
-                "cccccccc.",
-                "dddddddc.",
-                "dddddddc.",
-                "cccccccc.",
-                "ddddcddc.",
-            ],
-            nyyn: [
-                "ddddcddc.",
-                "cccccccc.",
-                "dcdddddc.",
-                "dcdddddc.",
-                "cccccccc.",
-                "dddddddc.",
-                "dddddddc.",
-                "cccccccc.",
-                "........-",
-            ],
-            nnyy: [
-                ".cddcdddd",
-                ".cccccccc",
-                ".cddddddd",
-                ".cddddddd",
-                ".cccccccc",
-                ".cdddddcd",
-                ".cdddddcd",
-                ".cccccccc",
-                "-........",
-            ],
-            ynny: [
-                "-........",
-                ".cccccccc",
-                ".cddddddd",
-                ".cddddddd",
-                ".cccccccc",
-                ".cddddddd",
-                ".cddddddd",
-                ".cccccccc",
-                ".cddddddd",
-            ],
-            yyyn: [
-                "........-",
-                "cccccccc.",
-                "dddddddc.",
-                "dddddddc.",
-                "cccccccc.",
-                "dddddddc.",
-                "dddddddc.",
-                "cccccccc.",
-                "........-",
-            ],
             nyyy: [
-                ".cddcddc.",
-                ".ccccccc.",
-                ".cdddddc.",
-                ".cdddddc.",
-                ".ccccccc.",
-                ".cdddddc.",
-                ".cdddddc.",
-                ".ccccccc.",
-                "-.......-",
+                ".........",
+                "ccccccccc",
+                "dcddddddd",
+                "dcddddddd",
+                "ccccccccc",
+                "dddddddcd",
+                "dddddddcd",
+                "ccccccccc",
+                "ddddcdddd",
             ],
             ynyy: [
+                "ddddcddc.",
+                "cccccccc.",
+                "dcdddddc.",
+                "dcdddddc.",
+                "cccccccc.",
+                "dddddddc.",
+                "dddddddc.",
+                "cccccccc.",
+                "ddddcddc.",
+            ],
+            yyny: [
+                "ddddcdddd",
+                "ccccccccc",
+                "dcddddddd",
+                "dcddddddd",
+                "ccccccccc",
+                "dddddddcd",
+                "dddddddcd",
+                "ccccccccc",
+                ".........",
+            ],
+            yyyn: [
+                ".cddcdddd",
+                ".cccccccc",
+                ".cddddddd",
+                ".cddddddd",
+                ".cccccccc",
+                ".cdddddcd",
+                ".cdddddcd",
+                ".cccccccc",
+                ".cddcdddd",
+            ],
+            nnyy: [
+                "........-",
+                "cccccccc.",
+                "dcdddddc.",
+                "dcdddddc.",
+                "cccccccc.",
+                "dddddddc.",
+                "dddddddc.",
+                "cccccccc.",
+                "ddddcddc.",
+            ],
+            ynny: [
+                "ddddcddc.",
+                "cccccccc.",
+                "dcdddddc.",
+                "dcdddddc.",
+                "cccccccc.",
+                "dddddddc.",
+                "dddddddc.",
+                "cccccccc.",
+                "........-",
+            ],
+            yynn: [
+                ".cddcdddd",
+                ".cccccccc",
+                ".cddddddd",
+                ".cddddddd",
+                ".cccccccc",
+                ".cdddddcd",
+                ".cdddddcd",
+                ".cccccccc",
+                "-........",
+            ],
+            nyyn: [
+                "-........",
+                ".cccccccc",
+                ".cddddddd",
+                ".cddddddd",
+                ".cccccccc",
+                ".cddddddd",
+                ".cddddddd",
+                ".cccccccc",
+                ".cddddddd",
+            ],
+            nnny: [
+                "........-",
+                "cccccccc.",
+                "dddddddc.",
+                "dddddddc.",
+                "cccccccc.",
+                "dddddddc.",
+                "dddddddc.",
+                "cccccccc.",
+                "........-",
+            ],
+            ynnn: [
+                ".cddcddc.",
+                ".ccccccc.",
+                ".cdddddc.",
+                ".cdddddc.",
+                ".ccccccc.",
+                ".cdddddc.",
+                ".cdddddc.",
+                ".ccccccc.",
+                "-.......-",
+            ],
+            nynn: [
                 "-........",
                 ".cccccccc",
                 ".cddddddd",
@@ -857,7 +857,7 @@ const gfxData = {
                 ".cccccccc",
                 "-........",
             ],
-            yyny: [
+            nnyn: [
                 "-.......-",
                 ".ccccccc.",
                 ".cdddddc.",
@@ -868,7 +868,7 @@ const gfxData = {
                 ".ccccccc.",
                 ".cddcddc.",
             ],
-            ynyn: [
+            nyny: [
                 ".........",
                 "ccccccccc",
                 "dcddddddd",
@@ -879,7 +879,7 @@ const gfxData = {
                 "ccccccccc",
                 ".........",
             ],
-            nyny: [
+        	ynyn: [
                 ".cddcddc.",
                 ".ccccccc.",
                 ".cdddddc.",
@@ -914,7 +914,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "bbbbabbbb",
             ],
-            ynnn: [
+            nyyy: [
                 "a---aa--a",
                 "aaaaaaaaa",
                 "babbbbbbb",
@@ -925,7 +925,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "bbbbabbbb",
             ],
-            nynn: [
+            ynyy: [
                 "bbbbabba-",
                 "aaaaaaaa-",
                 "babbbbbaa",
@@ -936,7 +936,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "bbbbabbaa",
             ],
-            nnyn: [
+            yyny: [
                 "bbbbabbbb",
                 "aaaaaaaaa",
                 "babbbbbbb",
@@ -947,7 +947,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "aa-aaaaaa",
             ],
-            nnny: [
+            yyyn: [
                 "-abbabbbb",
                 "aaaaaaaaa",
                 "aabbbbbbb",
@@ -958,7 +958,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "-abbabbbb",
             ],
-            yynn: [
+            nnyy: [
                 "aaaaa-aa-",
                 "aaaaaaaaa",
                 "babbbbbaa",
@@ -969,7 +969,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "bbbbabbaa",
             ],
-            nyyn: [
+            ynny: [
                 "bbbbabbaa",
                 "aaaaaaaa-",
                 "babbbbba-",
@@ -980,7 +980,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "aa---aaa-",
             ],
-            nnyy: [
+            yynn: [
                 "-abbabbbb",
                 "-aaaaaaaa",
                 "aabbbbbbb",
@@ -989,9 +989,9 @@ const gfxData = {
                 "aabbbbbab",
                 "-abbbbbab",
                 "aaaaaaaaa",
-                "-aaaaaaaa",
+                "-aaa--aaa",
             ],
-            ynny: [
+            nyyn: [
                 "a--aaaa-a",
                 "aaaaaaaaa",
                 "-abbbbbbb",
@@ -1002,7 +1002,7 @@ const gfxData = {
                 "-aaaaaaaa",
                 "aabbabbbb",
             ],
-            yyyn: [
+            nnny: [
                 "a--aa-aa-",
                 "aaaaaaaaa",
                 "babbbbbaa",
@@ -1013,7 +1013,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "aaaaaa-aa",
             ],
-            nyyy: [
+            ynnn: [
                 "aabbabbaa",
                 "aaaaaaaa-",
                 "aabbbbba-",
@@ -1024,7 +1024,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "-aa-aaaa-",
             ],
-            ynyy: [
+            nynn: [
                 "aa--aa-aa",
                 "-aaaaaaaa",
                 "aabbbbbbb",
@@ -1035,7 +1035,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "-aa--aa-a",
             ],
-            yyny: [
+            nnyn: [
                 "-aa---aa-",
                 "aaaaaaaaa",
                 "aabbbbbaa",
@@ -1046,7 +1046,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "aabbabbaa",
             ],
-            ynyn: [
+            nyny: [
                 "aa---aaaa",
                 "aaaaaaaaa",
                 "babbbbbbb",
@@ -1057,7 +1057,7 @@ const gfxData = {
                 "aaaaaaaaa",
                 "aaaa--aaa",
             ],
-            nyny: [
+            ynyn: [
                 "aabbabbaa",
                 "-aaaaaaaa",
                 "-abbbbbaa",
@@ -1092,7 +1092,7 @@ const gfxData = {
                 "eeeeeeeee",
                 "eddeeedde",
             ],
-            ynnn: [
+            nyyy: [
                 ".........",
                 "kjjjkkjjj",
                 "jccjjjccj",
@@ -1103,7 +1103,7 @@ const gfxData = {
                 "eeeeeeeee",
                 "eddeeedde",
             ],
-            nynn: [
+            ynyy: [
                 "dddddcjj.",
                 "ddddddcj.",
                 "ddddddcj.",
@@ -1114,7 +1114,7 @@ const gfxData = {
                 "eeeeedcj.",
                 "eddedcjk.",
             ],
-            nnyn: [
+            yyny: [
                 "ddddddddd",
                 "ddddddddd",
                 "eddeeedde",
@@ -1125,7 +1125,7 @@ const gfxData = {
                 "kjjjkkjjj",
                 ".........",
             ],
-            nnny: [
+            yyyn: [
                 ".jjcddddd",
                 ".jcdddddd",
                 ".jcdddddd",
@@ -1136,8 +1136,8 @@ const gfxData = {
                 ".jcdeeeee",
                 ".kjcdedde",
             ],
-            yynn: [
-                ".......",
+            nnyy: [
+            	".......",
                 "jjjjkkk.",
                 "jccjjjjk.",
                 "cddcccjk.",
@@ -1147,7 +1147,7 @@ const gfxData = {
                 "eeeeedcj.",
                 "eddedcjj.",
             ],
-            nyyn: [
+            ynny: [
                 "dddddcjj.",
                 "ddddedcj.",
                 "eddeedcj.",
@@ -1158,7 +1158,7 @@ const gfxData = {
                 "jjjjjjk.",
                 ".......",
             ],
-            nnyy: [
+            yynn: [
                 ".jjcddddd",
                 ".jcdedddd",
                 ".jcdeedde",
@@ -1169,7 +1169,7 @@ const gfxData = {
                 " .jjjjjjj",
                 "  .......",
             ],
-            ynny: [
+            nyyn: [
                 "  .......",
                 " .kkkjjjj",
                 ".kjjjjccj",
@@ -1180,7 +1180,7 @@ const gfxData = {
                 ".jcdeeeee",
                 ".jjcdedde",
             ],
-            yyyn: [
+            nnny: [
                 ".......",
                 "jjjjkkk.",
                 "jccjjjjk.",
@@ -1191,7 +1191,7 @@ const gfxData = {
                 "jjjjjjk.",
                 ".......",
             ],
-            nyyy: [
+            ynnn: [
                 ".jjcdcjj.",
                 ".jcdddcj.",
                 ".jcdddcj.",
@@ -1202,7 +1202,7 @@ const gfxData = {
                 " .kjjjk.",
                 "  .....",
             ],
-            ynyy: [
+            nynn: [
                 "  .......",
                 " .kkkjjjj",
                 ".kjjjjccj",
@@ -1213,7 +1213,7 @@ const gfxData = {
                 " .kjjjjjj",
                 "  .......",
             ],
-            yyny: [
+            nnyn: [
                 "  .....",
                 " .kkkkk.",
                 ".kjjjjjk.",
@@ -1224,7 +1224,7 @@ const gfxData = {
                 ".jcdddcj.",
                 ".jjcdcjj.",
             ],
-            ynyn: [
+            nyny: [
                 ".........",
                 "kjjjkkjjj",
                 "jccjjjccj",
@@ -1235,7 +1235,7 @@ const gfxData = {
                 "kjjjkkjjj",
                 ".........",
             ],
-            nyny: [
+            ynyn: [
                 ".jjcdcjj.",
                 ".jcdddcj.",
                 ".jcdddcj.",

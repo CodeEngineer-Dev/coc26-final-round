@@ -167,25 +167,23 @@ class WorldBuilder {
                     return bitmap[r][c] === ch;
                 };
 
-                const N  = solid(row-1, col);
-                const E  = solid(row,col+1);
-                const S  = solid(row+1, col);
-                const W  = solid(row, col-1);
+                const N = solid(row-1, col);
+                const E = solid(row,col+1);
+                const S = solid(row+1, col);
+                const W = solid(row, col-1);
 
                 const NE = N && E && solidDiag(row-1, col+1);
                 const SE = S && E && solidDiag(row+1, col+1);
                 const SW = S && W && solidDiag(row+1, col-1);
                 const NW = N && W && solidDiag(row-1, col-1);
-                const key8 = (N  ? 'n' : 'y') + (NE ? 'n' : 'y')
-                        + (E  ? 'n' : 'y') + (SE ? 'n' : 'y')
-                        + (S  ? 'n' : 'y') + (SW ? 'n' : 'y')
-                        + (W  ? 'n' : 'y') + (NW ? 'n' : 'y');
+                const key8 = (N ? 'y' : 'n') + (NE ? 'y' : 'n')
+                        + (E ? 'y' : 'n') + (SE ? 'y' : 'n')
+                        + (S ? 'y' : 'n') + (SW ? 'y' : 'n')
+                        + (W ? 'y' : 'n') + (NW ? 'y' : 'n');
 
                 //cardinals only, for tilesets that don't have diagonal variants
                 const key4 = key8[0] + key8[2] + key8[4] + key8[6];
-
-                const sprite = def.tileset[key8] ?? def.tileset[key4] ?? def.tileset['yyyy'];
-
+                const sprite = (def.tileset[key8] ?? def.tileset[key4]) ?? def.tileset['nnnn'];
                 if (!sprite) {
                     //remove later
                     console.error(`WorldBuilder: missing sprite key "${key}" for '${ch}' at (${col},${row})`);
