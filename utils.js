@@ -13,6 +13,11 @@ function lerp(num1, num2, amt) {
 	return num1 + (num2 - num1) * amt;
 }
 
+// Calculates amount from lerp based on two endpoints and a value
+function antilerp(num1, num2, val) {
+    return (val - num1) / (num2 - num1);
+}
+
 //Re-maps a number from one range to another.
 function map(num, start1, stop1, start2, stop2) {
 	return start2 + (num - start1) / (stop1 - start1) * (stop2 - start2);

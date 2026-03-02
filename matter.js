@@ -247,7 +247,21 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             });
         }
 
-        /** Tick the game forward   
+        /** Goes through array, returns all elements touching of type
+         * 
+         * @param {typeof MObject} type
+         * @param {MWorld} world
+         * @returns {MObject[]}
+         */
+        touchingAll(type, world) {
+            const out = [];
+            world.iterate(obj => {
+                if (obj instanceof type && obj?.hbox?.collision?.(this.hbox)) out.push(obj);
+            });
+            return out;
+        }
+
+        /** Tick the entity forward   
          * 
          * @param {number} dt 
          * @param {Object} events
@@ -307,9 +321,12 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             );
             this.x = player.x + player.w / 2;
             this.y = player.y + player.h / 2;
+            this.px = this.x;
+            this.py = this.y;
             this.xv = xv;
             this.yv = yv;
             this.engine = player.engine;
+            this.dead = false;
         }
         render(ctx, camera, t, pixel) {
             const { x, y } = camera.worldToScreen(this.x, this.y);
@@ -320,6 +337,45 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             const offsetY = (this.h * camera.tsz - sprite.h * pixel) / 2;
 
             sprite.draw(ctx, x + offsetX, y + offsetY, pixel, this.facing ?? 1);
+        }
+        /** Tick the ball forward   
+         * 
+         * @param {number} dt 
+         * @returns {void}
+         */
+        tick(dt) {
+            this.px = this.x;
+            this.py = this.y;
+            const { world, gravity } = this.engine;
+            this.x += this.xv * dt;
+            this.updateHitbox();
+            const xt = this.touching(MSolid, world);
+            if (xt) {
+                // doing this makes things MUCH more convenient
+                // when teleporting
+                if (this.xv > 0) {
+                    this.x = xt.hbox.x1;
+                } else {
+                    this.x = xt.hbox.x2;
+                }
+                this.dead = true;
+            }
+            this.yv += gravity * dt;
+            this.y += this.yv * dt;
+            this.updateHitbox();
+            const yt = this.touching(MSolid, world);
+            if (yt) {
+                if (this.yv > 0) {
+                    this.y = yt.hbox.y1;
+                } else {
+                    this.y = yt.hbox.y2;
+                }
+                this.dead = true;
+            }
+            this.updateHitbox();
+            if (this.touching(MHazard, world)) {
+                this.dead = true;
+            }
         }
     }
 
@@ -399,10 +455,87 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                     (this.dragX - this.dragInitX) / tsz * this.constructor.throwFactor,
                     (this.dragY - this.dragInitY) / tsz * this.constructor.throwFactor,
                 );
-            } else if (events.Mouse && this.ball) {
-                this.x = this.ball.x - this.w / 2;
-                this.y = this.ball.y - this.h / 2;
+            } else if ((events.Mouse && this.ball) || this.ball?.dead) {
+                const epsilon = this.engine.epsilon;
+                if (this.ball.xv > 0) {
+                    this.x = this.ball.hbox.x2 - this.w - epsilon;
+                } else {
+                    this.x = this.ball.hbox.x1 + epsilon;
+                }
+                if (this.ball.yv > 0) {
+                    this.y = this.ball.hbox.y2 - this.h - epsilon;
+                } else {
+                    this.y = this.ball.hbox.y1 + epsilon;
+                }
                 this.updateHitbox();
+
+                /*
+                const solidsTouched = this.touchingAll(MSolid, this.engine.world);
+                const collisions = [];
+                
+                // this is a mechanic originating from xyzyyxx's platformer engine
+                // adapted to this situation
+                for (const s of solidsTouched) {
+                    // this is an array for the four directions the ball could've
+                    // collided with the solid
+                    const collCandidates = [];
+
+                    // logic: rt gets the time at which it was collided
+                    // ry gets the ball's y position at the time, to verify if it's
+                    // legit and not off the segment
+                    const rt = antilerp(this.ball.px, this.ball.x, s.hbox.x1);
+                    const ry = lerp(this.ball.py, this.ball.y, rt);
+                    if (rt >= 0 && rt <= 1 && ry >= s.hbox.y1 && ry <= s.hbox.y2) {
+                        collCandidates.push({ t: rt, solid: s, side: "r" });
+                    }
+
+                    // same for all 4 sides
+                    // down
+                    const dt = antilerp(this.ball.py, this.ball.y, s.hbox.y1);
+                    const dx = lerp(this.ball.px, this.ball.x, dt);
+                    if (dt >= 0 && dt <= 1 && dx >= s.hbox.x1 && dx <= s.hbox.x2) {
+                        collCandidates.push({ t: dt, solid: s, side: "d" });
+                    }
+
+                    // left
+                    const lt = antilerp(this.ball.px, this.ball.x, s.hbox.x2);
+                    const ly = lerp(this.ball.py, this.ball.y, rt);
+                    if (lt >= 0 && lt <= 1 && ly >= s.hbox.y1 && ly <= s.hbox.y2) {
+                        collCandidates.push({ t: lt, solid: s, side: "l" });
+                    }
+
+                    // up
+                    const ut = antilerp(this.ball.py, this.ball.y, s.hbox.y2);
+                    const ux = lerp(this.ball.ux, this.ball.x, ut);
+                    if (ut >= 0 && ut <= 1 && ux >= s.hbox.x1 && ux <= s.hbox.x2) {
+                        collCandidates.push({ t: ut, solid: s, side: "u" });
+                    }
+                    window.console.log(this.ball, s, collCandidates);
+                    // add to collisions the first of the four
+                    collisions.push(collCandidates.reduce((min, current) => {
+                        if (!min || min.t > current.t) {
+                            return current;
+                        } else {
+                            return min;
+                        }
+                    }));
+                }
+
+                // sort collisions by earliest to latest
+                collisions.sort((a, b) => a.t - b.t);
+
+                for (const coll in collisions) {
+                    if (this.hbox.collide(coll.solid.hbox)) {
+                        switch (coll.side) {
+                            case "r": this.x = coll.solid.x - this.w; break;
+                            case "d": this.y = coll.solid.y - this.h; break;
+                            case "l": this.x = coll.solid.x + coll.solid.w; window.console.log(coll); break;
+                            case "u": this.y = coll.solid.y + coll.solid.h; break;
+                        }
+                        this.updateHitbox();
+                    }
+                }*/
+
                 this.ball = null;
             }
 
@@ -920,6 +1053,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.hvel = hvel ?? 10;
             this.friction = friction ?? 0.000000001;
             this.jump = jump ?? 20;
+            this.epsilon = 0.001; // small value to prevent unwanted collisions
             this.groundPoundMult = groundPoundMult ?? 2;
             this.renderer = null;
             this.world = new MWorld(this);
