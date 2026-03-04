@@ -22,8 +22,8 @@ const roomTemplates = {
     //     "#     BB  K         ",
     //     "####################",
     // ],
-    A: {
-        bitmap: [
+    A: /*{
+        bitmap: */[
             "####################",
             "#                  #",
             "#                  #",
@@ -43,7 +43,7 @@ const roomTemplates = {
             "#   BBBB            ",
             "# e E BB  K     N   ",
             "####################",
-        ],
+        ],/*
         npcs: {
             N: {
                 sprite: 'pakala',
@@ -57,7 +57,7 @@ const roomTemplates = {
                 ]
             },
         }
-    },
+    },*/
 
     B: [
         "####################",
@@ -128,7 +128,7 @@ const worldAssembly = [
 
 
 
-
+/*
 //autotiling!
 function chooseTile(bitmap, row, col, tileMap) {
     const ch = bitmap[row][col];
@@ -167,7 +167,7 @@ function chooseTile(bitmap, row, col, tileMap) {
 
 /* 
     Build the world
-*/
+*//*
 class WorldBuilder {
     constructor(engine, blockSize, tileMap) {
         this.engine = engine;
@@ -254,7 +254,7 @@ class WorldBuilder {
 
 /* 
     Manage world transitions
-*/
+*//*
 class WorldManager {
     constructor(engine, roomTemplates, worldAssembly, builder) {
         this.engine = engine;
@@ -454,9 +454,11 @@ class WorldManager {
             }
         }
     }
-}
+}*/
 
 //you don't know me son
+// ok bro why did you NOT put this in the frickin matter.js arrow
+// the heck are you doing -xyzyyxx
 class MCheckpoint extends MDecorative {
     static ACTIVATE_RADIUS = 3;
     static LIGHT_UP_DURATION = 0.7;

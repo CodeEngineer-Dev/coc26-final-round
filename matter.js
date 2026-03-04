@@ -83,6 +83,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             // dbox: this is used for rendering optimization
             this.dbox = dbox;
             this.texturer = texturer;
+            this.room = null;
         }
     }
 
@@ -235,6 +236,14 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.hbox.setWH(this.x, this.y, this.w, this.h);
         }
 
+        /** Transport entity to a different room if it enters one
+         * 
+         * @returns {void}
+         */
+        transport() {
+            this.engine.world.transportEntity(this);
+        }
+
         /** Goes through array, returns first element touching of type
          * 
          * @param {typeof MObject} type
@@ -242,7 +251,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
          * @returns {MObject?}
          */
         touching(type, world) {
-            return world.iterate(obj => {
+            return world.iterateRoom(this.room, obj => {
                 if (obj instanceof type && obj?.hbox?.collision?.(this.hbox)) return obj;
             });
         }
@@ -255,7 +264,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
          */
         touchingAll(type, world) {
             const out = [];
-            world.iterate(obj => {
+            world.iterateRoom(this.room, obj => {
                 if (obj instanceof type && obj?.hbox?.collision?.(this.hbox)) out.push(obj);
             });
             return out;
@@ -283,16 +292,16 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             }
             this.xv *= Math.pow(friction, dt);
             this.x += this.xv * dt;
-            this.updateHitbox();
+            this.transport();
             if (this.touching(MSolid, world)) {
                 this.x -= this.xv * dt;
                 this.xv = 0;
-                this.updateHitbox();
+                this.transport();
             }
             this.yv += gravity * dt;
             this.grounded = false;
             this.y += this.yv * dt;
-            this.updateHitbox();
+            this.transport();
             if (this.touching(MSolid, world)) {
                 this.grounded = true;
                 this.y -= this.yv * dt;
@@ -301,13 +310,13 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                 } else {
                     this.yv = 0;
                 }
-                this.updateHitbox();
+                this.transport();
             }
             if (this.touching(MHazard, world)) {
                 this.x = this.sx;
                 this.y = this.sy;
                 this.health = this.maxHealth;
-                this.updateHitbox();
+                this.transport();
             }
         }
     }
@@ -326,6 +335,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.xv = xv;
             this.yv = yv;
             this.engine = player.engine;
+            this.room = player.room;
             this.dead = false;
         }
         render(ctx, camera, t, pixel) {
@@ -348,7 +358,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.py = this.y;
             const { world, gravity } = this.engine;
             this.x += this.xv * dt;
-            this.updateHitbox();
+            this.transport();
             const xt = this.touching(MSolid, world);
             if (xt) {
                 // doing this makes things MUCH more convenient
@@ -362,7 +372,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             }
             this.yv += gravity * dt;
             this.y += this.yv * dt;
-            this.updateHitbox();
+            this.transport();
             const yt = this.touching(MSolid, world);
             if (yt) {
                 if (this.yv > 0) {
@@ -372,7 +382,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                 }
                 this.dead = true;
             }
-            this.updateHitbox();
+            this.transport();
             if (this.touching(MHazard, world)) {
                 this.dead = true;
             }
@@ -467,7 +477,9 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                 } else {
                     this.y = this.ball.hbox.y1 + epsilon;
                 }
-                this.updateHitbox();
+                this.transport();
+
+                // TODO: add stuck logic in case the ball is falling downward but there's a block above!!!!
 
                 /*
                 const solidsTouched = this.touchingAll(MSolid, this.engine.world);
@@ -532,7 +544,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                             case "l": this.x = coll.solid.x + coll.solid.w; window.console.log(coll); break;
                             case "u": this.y = coll.solid.y + coll.solid.h; break;
                         }
-                        this.updateHitbox();
+                        this.transport();
                     }
                 }*/
 
@@ -754,29 +766,29 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
         }
 
         /** @param {number} dt */
-            tick(dt) {
-                if (this.dead) return;
+        tick(dt) {
+            if (this.dead) return;
 
-                if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            if (this.contactCooldown > 0) this.contactCooldown -= dt;
 
-                const player = this.engine?.player;
-                if (player && this.hbox.collision(player.hbox) && this.contactCooldown <= 0) {
-                    this.onPlayerContact(player);
-                    this.contactCooldown = 0.6;
-                }
-
-                this.stateTime += dt;
-                this.ai(dt);
-
-                const fakeEvents = {
-                    KeyA: this._moveLeft,
-                    KeyD: this._moveRight,
-                    KeyW: this._jumpQueued,
-                };
-                this._moveLeft = this._moveRight = this._jumpQueued = false;
-
-                super.tick(dt, fakeEvents);
+            const player = this.engine?.player;
+            if (player && this.hbox.collision(player.hbox) && this.contactCooldown <= 0) {
+                this.onPlayerContact(player);
+                this.contactCooldown = 0.6;
             }
+
+            this.stateTime += dt;
+            this.ai(dt);
+
+            const fakeEvents = {
+                KeyA: this._moveLeft,
+                KeyD: this._moveRight,
+                KeyW: this._jumpQueued,
+            };
+            this._moveLeft = this._moveRight = this._jumpQueued = false;
+
+            super.tick(dt, fakeEvents);
+        }
 
         /** Called every frame the enemy overlaps the player.
          *  Override in subclasses for custom contact effects.
@@ -817,43 +829,192 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
     class MWorld {
         /** Constructs an instance of MWorld.
          * 
+         * @typedef {{ type: typeof MObject, tileset: {[key: string]: SpriteRef} }} TileData
+         * 
          * @constructor
+         * @param {MEngine} engine
          */
         constructor(engine) {
-            // z indexed array
-            this.zia = {};
-            this.indices = []; // important: must ALWAYS be in ascending order
+            this.roomData = {};
+            this.assembly = [];
+            this.tileMap = {};
+            this.rooms = [];
             this.engine = engine;
         }
 
-        /** Adds an object to the MWorld.
+        /** Initiates an MWorld.
          * 
+         * @typedef {{ type: typeof MObject, tileset: {[key: string]: SpriteRef} }} TileData
+         * 
+         * @param {{ [key: string]: string }} roomData
+         * @param {string[]} worldAssembly
+         * @param {{ [key: string]: TileData }} tileMap
+         */
+        init(roomData, worldAssembly, tileMap) {
+            this.roomData = roomData;
+            this.assembly = worldAssembly;
+            this.tileMap = tileMap;
+            for (const row in worldAssembly) {
+                this.rooms.push([]);
+                for (const col in worldAssembly[row]) {
+                    this.rooms[row].push({
+                        zia: {}, // z-indexed array
+                        indices: [], // important: must ALWAYS be in ascending order
+                        entities: [],
+                        loaded: false,
+                        width: 0,
+                        height: 0,
+                        row: parseFloat(row),
+                        col: parseFloat(col),
+                    });
+                    const room = this.rooms[row][col];
+                    const { width, height } = this.build(room, this.roomData[this.assembly[row][col]], tileMap);
+                    room.width = width;
+                    room.height = height;
+                    room.loaded = true;
+                }
+            }
+        }
+
+        /** Adds an object to a room of the MWorld.
+         * 
+         * @param {MObject} room
          * @param {MObject} obj 
          * @param {number} [z=0]
          * @returns {void}
          */
-        add(obj, z=0) {
-            if (!this.zia[z]) {
-                this.zia[z] = [];
+        add(room, obj, z=0) {
+            if (!room.zia[z]) {
+                room.zia[z] = [];
                 // find the index at which to put z into indices
                 let i = 0;
-                while (i < this.indices.length && this.indices[i] < z) i ++;
-                this.indices.splice(i, 0, z); // At index i, remove 0 elements, and insert z
+                while (i < room.indices.length && room.indices[i] < z) i ++;
+                room.indices.splice(i, 0, z); // At index i, remove 0 elements, and insert z
             }
-            this.zia[z].push(obj);
+            room.zia[z].push(obj);
             obj.engine = this.engine;
+            obj.room = room;
         }
 
-        /** Iterates through the z indexed array with a callback. If the callback
+        // TODO: ADD JSDOC!!!
+        build(room, bitmap, tileMap) {
+            let maxCols = 0;
+
+            for (let row = 0; row < bitmap.length; row++) {
+                const line = bitmap[row];
+                if (line.length > maxCols) maxCols = line.length;
+
+                for (let col = 0; col < line.length; col++) {
+                    const ch = line[col];
+                    const def = tileMap[ch];
+                    if (!def) continue;
+
+                    //pick sprite first before constructuing object
+                    const solid = (r, c) => {
+                        if (r < 0 || r >= bitmap.length) return true;
+                        if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return true;
+                        return bitmap[r][c] === ch;
+                    };
+
+                    //diagonals treat out-of-bounds as empty, not solid
+                    const solidDiag = (r, c) => {
+                        if (r < 0 || r >= bitmap.length) return false;
+                        if (c < 0 || c >= (bitmap[r]?.length ?? 0)) return false;
+                        return bitmap[r][c] === ch;
+                    };
+
+                    const N = solid(row-1, col);
+                    const E = solid(row,col+1);
+                    const S = solid(row+1, col);
+                    const W = solid(row, col-1);
+
+                    const NE = N && E && solidDiag(row-1, col+1);
+                    const SE = S && E && solidDiag(row+1, col+1);
+                    const SW = S && W && solidDiag(row+1, col-1);
+                    const NW = N && W && solidDiag(row-1, col-1);
+                    const key8 = (N ? 'y' : 'n') + (NE ? 'y' : 'n')
+                            + (E ? 'y' : 'n') + (SE ? 'y' : 'n')
+                            + (S ? 'y' : 'n') + (SW ? 'y' : 'n')
+                            + (W ? 'y' : 'n') + (NW ? 'y' : 'n');
+
+                    //cardinals only, for tilesets that don't have diagonal variants
+                    const key4 = key8[0] + key8[2] + key8[4] + key8[6];
+                    const sprite = (def.tileset[key8] ?? def.tileset[key4]) ?? def.tileset['nnnn'];
+                    if (!sprite) {
+                        //remove later
+                        console.error(`WorldBuilder: missing sprite key "${key}" for '${ch}' at (${col},${row})`);
+                        continue;
+                    }
+
+                    const x = col;
+                    const y = row;
+
+                    //sprite is captured in the closure
+                    const obj = new def.type(x, y, 1, 1, () => sprite);
+                    this.add(room, obj, 0);
+                }
+            }
+
+            return {
+                width: maxCols,
+                height: bitmap.length,
+            };
+        }
+
+        addEntity(room, entity) {
+            room.entities.push(entity);
+            entity.engine = this.engine;
+            entity.room = room;
+        }
+
+        transportEntity(entity) {
+            let { row, col, width } = entity.room;
+            if (entity.x < 0 && this.rooms[row]?.[col - 1]) {
+                entity.room = this.rooms[row][col - 1];
+                entity.x += entity.room.width;
+            } else if (entity.x > width && this.rooms[row]?.[col + 1]) {
+                entity.room = this.rooms[row][col + 1];
+                entity.x -= width;
+            }
+            // yeah ik this looks awkward LOL
+            let height;
+            ({ row, col, height } = entity.room);
+            if (entity.y < 0 && this.rooms[row - 1]?.[col]) {
+                entity.room = this.rooms[row - 1]?.[col];
+                entity.y += entity.room.height;
+            } else if (entity.y > height && this.rooms[row + 1]?.[col]) {
+                entity.room = this.rooms[row + 1][col];
+                entity.y -= height;
+            }
+            entity.updateHitbox();
+        }
+
+        /** Iterates through the rooms with a callback. If the callback
          * returns a value, it breaks and returns that value.
          * 
          * @param {MObject => any} callback 
          * @returns {any}
          */
         iterate(callback) {
+            for (const row of this.rooms) {
+                for (const room of row) {
+                    const retval = this.iterateRoom(room, callback);
+                    if (typeof retval !== "undefined") return retval;
+                }
+            }
+        }
+
+        /** Iterates through the z indexed array of a single room with a callback. If the callback
+         * returns a value, it breaks and returns that value.
+         * 
+         * @param {Object} room
+         * @param {MObject => any} callback 
+         * @returns {any}
+         */
+        iterateRoom(room, callback) {
             // go through in ASCENDING order
-            for (const i of this.indices) {
-                for (const obj of this.zia[i]) {
+            for (const i of room.indices) {
+                for (const obj of room.zia[i]) {
                     const retval = callback(obj);
                     if (typeof retval !== "undefined") return retval;
                 }
@@ -911,25 +1072,24 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
         /** Focusconstrain to room bounds, zoom in if room is smaller than viewport.
          *
          * @param {MPlayer} player
-         * @param {number} roomW  room width  in world units
-         * @param {number} roomH  room height in world units
+         * @param {Object} room
          */
-        focusPlayerConstrained(player, roomW, roomH) {
+        focusPlayerConstrained(player, room) {
             const cx = player.x + player.w / 2;
             const cy = player.y + player.h / 2;
 
             //zoom in if the room is too small to fill the canvas at baseTsz
-            const tszX = this.w / roomW;
-            const tszY = this.h / roomH;
+            const tszX = this.w / room.width;
+            const tszY = this.h / room.height;
             this.tsz = Math.max(this.baseTsz, tszX, tszY);
 
             //visible world area at the (possibly zoomed) tsz
             const vw = this.w / this.tsz;
             const vh = this.h / this.tsz;
 
-            //clamp so the view never shows outside [0, roomW] x [0, roomH]
-            const fx = Math.max(vw / 2, Math.min(roomW - vw / 2, cx));
-            const fy = Math.max(vh / 2, Math.min(roomH - vh / 2, cy));
+            //clamp so the view never shows outside [0, room.width] x [0, room.height]
+            const fx = Math.max(vw / 2, Math.min(room.width - vw / 2, cx));
+            const fy = Math.max(vh / 2, Math.min(room.height - vh / 2, cy));
 
             this.focus(fx, fy);
         }
@@ -994,14 +1154,14 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
         
         /** Renders everything except the player */
         renderScene(t) {
-            const rb = this.engine.roomBounds;
-            if (rb) {
-                this.camera.focusPlayerConstrained(this.engine.player, rb.w, rb.h);
+            const room = this.engine.player.room;
+            if (room) {
+                this.camera.focusPlayerConstrained(this.engine.player, room);
             } else {
                 this.camera.focusPlayer(this.engine.player);
             }
             this.pixel = this.camera.tsz / this.res;
-            this.engine.world.iterate(obj => {
+            this.engine.world.iterateRoom(room, obj => {
                 if (obj instanceof MPlayer) return; // skip player — fixes clip in snapshot
                 if (this.camera.inView(obj)) obj.render(this.ctx, this.camera, t, this.pixel);
             });
@@ -1019,7 +1179,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.renderScene(t);
             this.renderPlayer(t);
             if (this.debug) { 
-                this.engine.world.iterate(obj => {
+                this.engine.world.iterateRoom(this.engine.player.room, obj => {
                     const hbox = obj.hbox ?? obj.dbox; 
                     if (!hbox) return;
                     const topLeft  = this.camera.worldToScreen(hbox.x1, hbox.y1);
@@ -1080,7 +1240,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
             this.player = new MPlayer(sx, sy, w, h, texturer);
             // Everything layer 0 and below is behind the player
             // Everything layer 1 and above is above the player
-            this.world.add(this.player, 1);
+            // TODO: make this not hacky
+            this.world.add(this.world.rooms[0][0], this.player, 1);
         }
 
         /** Set render configs
@@ -1113,7 +1274,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
                 this.player.xv = 0;
                 this.player.yv = 0;
                 this.player.health = this.player.maxHealth;
-                this.player.updateHitbox();
+                this.player.transport();
             }
             //tick every enemy each frame
             this.world.iterate(obj => {

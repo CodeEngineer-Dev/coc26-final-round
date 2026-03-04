@@ -154,7 +154,15 @@
             groundpoundimpact: 10,
         };
 
-        engine.createPlayer(0, 0, 0.97, 1.4, (t, player) => { 
+        const tileMap = {
+            '#': { type: MSolid, tileset: gfx.tiles.A },
+            '@': { type: MDecorative, tileset: gfx.tiles.a },
+            'B': { type: MSolid, tileset: gfx.tiles.B }, 
+        };
+
+        engine.world.init(roomTemplates, worldAssembly, tileMap);
+
+        engine.createPlayer(5, 5, 0.97, 1.4, (t, player) => { 
             const state = player.state ?? 'idle';
             const frames = gfx.player[state] ?? gfx.player.idle;
             const fps = ANIM_FPS[state] ?? 6;
@@ -187,15 +195,11 @@
             return frames[frame];
         });
         
-        const tileMap = {
-            '#': { type: MSolid, tileset: gfx.tiles.A },
-            '@': { type: MDecorative, tileset: gfx.tiles.a },
-            'B': { type: MSolid, tileset: gfx.tiles.B }, 
-        };
-
-        const builder = new WorldBuilder(engine, 1, tileMap);
-        const world = new WorldManager(engine, roomTemplates, worldAssembly, builder);
         
+
+        //const builder = new WorldBuilder(engine, 1, tileMap);
+        //const world = new WorldManager(engine, roomTemplates, worldAssembly, builder);
+        /*
         //for those of you who play clash royale -> heheheha
         world.onEnemySpawn = (type, x, y) => {
             if (type === 'E') { 
@@ -211,18 +215,13 @@
                 engine.world.add(new MCheckpoint(x, y - 3), 0); 
                 return; 
             }
-        };
+        };*/
 
         
         MNPC.DEBUG_RADIUS = true;
-
-
-        world.loadRoom(0, 0);
-
-        world.placePlayer(engine.player, 10, 12);
-
+        /*
         const roomTransition = new RoomTransition();
-        world.transition = roomTransition;
+        world.transition = roomTransition;*/
 
         /** HUD
          *
@@ -262,7 +261,7 @@
 
         //a render loop with a timestamp for dt updating @Judges
         const render = (timestamp) => {
-            try {
+            //try {
                 //prefer the rAF timestamp when present
                 const now = typeof timestamp === "number" ? timestamp : performance.now();
 
@@ -278,37 +277,36 @@
                 fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
                 
                 //peek at whether a room change is about to happen
-                const pendingDir = world.getPendingDir();
+                //const pendingDir = world.getPendingDir();
 
                 //iif so: render the old room (no player!) into the snapshot
-                if (pendingDir) {
+                /*if (pendingDir) {
                     ctx.fillStyle = "rgb(100, 100, 100)";
                     ctx.fillRect(0, 0, width, height);
                     engine.renderer.renderScene(t);
                     roomTransition.capture(canvas);
-                }
+                }*/
 
                 //clear for real this frame
                 ctx.fillStyle = "rgb(100, 100, 100)";
                 ctx.fillRect(0, 0, width, height);
                 
                 //transistion delay for room swap
-                world._transitionCooldown = Math.max(0, world._transitionCooldown - dt);
+                /*world._transitionCooldown = Math.max(0, world._transitionCooldown - dt);
                 world.execute(engine.player);
 
 
                 //execute room load (uses _pending already set above)
                 world.execute(engine.player);
-                if (pendingDir) roomTransition.start(pendingDir);
+                if (pendingDir) roomTransition.start(pendingDir);*/
 
                 //tick transition an' shake
-                roomTransition.tick(dt);
+                //roomTransition.tick(dt);
                 shakes.forEach((s, i) => s.active(i));
-
                 ctx.save();
                 ctx.translate(shake.x, shake.y);
 
-                if (roomTransition.active) {
+                /*if (roomTransition.active) {
                     const { x: nx, y: ny } = roomTransition.getNewOffset(width, height);
 
                     ctx.save();
@@ -319,17 +317,17 @@
                     roomTransition.drawOldRoom(ctx);
                     engine.renderer.renderPlayer(t);
                 }
-                else {
+                else {*/
                     engine.tick(t, dt, events);
                     renderHUD(ctx, engine.player, engine.renderer.pixel);
-                }
+                //}
 
                 ctx.restore();
                 frameCount++;
                 Object.assign(eventsPrev, events);
-            } catch (e) {
-                console.error("Main loop error\n" + e.stack);
-            }
+            //} catch (e) {
+            //    console.error("Main loop error\n" + e.stack);
+            //}
         };
 
         //Replace interval with rAF
