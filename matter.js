@@ -1104,6 +1104,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine } = (() 
          * @returns {void}
          */
         tick(t, dt, events) {
+            this.events = events;
             this.renderer.render(t);
             this.player.tick(dt, events);
             if (this.player.health <= 0) {

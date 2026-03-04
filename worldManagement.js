@@ -1,27 +1,63 @@
 //each room has a name "A" for instance. World Assembly is where each room goes
 const roomTemplates = {
 
-    A: [
-        "####################",
-        "#                  #",
-        "#                  #",
-        "#     ##            ",
-        "#                  #",
-        "#        ###       #",
-        "#                  #",
-        "#   ###            #",
-        "#   #              #",
-        "#             ##   #",
-        "#     E            #",
-        "#                  #",
-        "#       @      ##  #",
-        "#       @@@@       #",
-        "#  ###              ",
-        "#        e          ",
-        "#   BBBB            ",
-        "#     BB  K         ",
-        "####################",
-    ],
+    // A: [
+    //     "####################",
+    //     "#                  #",
+    //     "#                  #",
+    //     "#     ##            ",
+    //     "#                  #",
+    //     "#        ###       #",
+    //     "#                  #",
+    //     "#   ###            #",
+    //     "#   #              #",
+    //     "#             ##   #",
+    //     "#     E            #",
+    //     "#                  #",
+    //     "#       @      ##  #",
+    //     "#       @@@@       #",
+    //     "#  ###              ",
+    //     "#        e          ",
+    //     "#   BBBB            ",
+    //     "#     BB  K         ",
+    //     "####################",
+    // ],
+    A: {
+        bitmap: [
+            "####################",
+            "#                  #",
+            "#                  #",
+            "#     ##            ",
+            "#                  #",
+            "#        ###       #",
+            "#                  #",
+            "#   ###            #",
+            "#   #              #",
+            "#             ##   #",
+            "#                  #",
+            "#                  #",
+            "#              ##  #",
+            "#       @@@@       #",
+            "#  ###              ",
+            "#                   ",
+            "#   BBBB            ",
+            "# e E BB  K     N   ",
+            "####################",
+        ],
+        npcs: {
+            N: {
+                sprite: 'pakala',
+                dialogue: [
+                    "hiiiii",
+                    "My name is classified",
+                    ".",
+                    "..",
+                    "...",
+                    "You don't know me son",
+                ]
+            },
+        }
+    },
 
     B: [
         "####################",
@@ -89,6 +125,8 @@ const worldAssembly = [
     "AB",
     "CD",
 ];
+
+
 
 
 //autotiling!
@@ -238,29 +276,54 @@ class WorldManager {
     loadRoom(row, col) {
         const key = this._roomKey(row, col);
         if (!key) return;
-        const bitmap = this.templates[key];
-        if (!bitmap) return;
+        const room = this.templates[key];
+        if (!room) return;
 
         this.curRow = row;
         this.curCol = col;
+
+        //plain array or object with bitmap and npc defs
+        const bitmap  = Array.isArray(room) ? room : room.bitmap;
+        const npcDefs = Array.isArray(room) ? {}   : (room.npcs ?? {});
 
         const { widthUnits, heightUnits } = this.builder.build(bitmap);
         this.roomW = widthUnits;
         this.roomH = heightUnits;
 
         this.engine.roomBounds = { w: this.roomW, h: this.roomH };
-
-        //build or even rebuild nav graph for the new room
         this.engine.graph = new PlatformGraph(bitmap, this.builder.tileMap);
 
+        //enemy spawn stuffs
         if (this.onEnemySpawn) {
-            for (let row = 0; row < bitmap.length; row++) {
-                for (let col = 0; col < bitmap[row].length; col++) {
-                    const ch = bitmap[row][col];
+            for (let r = 0; r < bitmap.length; r++) {
+                for (let c = 0; c < bitmap[r].length; c++) {
+                    const ch = bitmap[r][c];
                     if (ch === 'E' || ch === 'e' || ch === 'K') {
-                        this.onEnemySpawn(ch, col * this.builder.blockSize, row * this.builder.blockSize);
+                        this.onEnemySpawn(ch, c * this.builder.blockSize, r * this.builder.blockSize);
                     }
                 }
+            }
+        }
+
+        //destroy old NPCs
+        this.engine.world.iterate(obj => {
+            if (obj instanceof MNPC) obj.destroy();
+        });
+
+        //spawn NPCs from bitmap
+        for (let r = 0; r < bitmap.length; r++) {
+            for (let c = 0; c < bitmap[r].length; c++) {
+                const ch  = bitmap[r][c];
+                const def = npcDefs[ch];
+                if (!def) continue;
+                const npc = new MNPC(
+                    c * this.builder.blockSize,
+                    //coefficent here can be modified based on the sprites size. Might have to make this changeable if NL or honeyghost add more NPCs
+                    (r + 1) * this.builder.blockSize - (def.h ?? 1.5),
+                    def.dialogue,
+                    def.sprite ?? 'pakala'
+                );
+                this.engine.world.add(npc, 0);
             }
         }
     }
@@ -451,5 +514,139 @@ class MCheckpoint extends MDecorative {
         //reposition the player's respawn point to the base of this totem
         player.sx = this.x + 1 - player.w / 2;
         player.sy = this.y + 4  - player.h;
+    }
+}
+
+class MNPC extends MDecorative {
+    static TALK_RADIUS = 4;
+    static ANIM_FPS = 3;
+    static DEBUG_RADIUS = false;
+
+    constructor(x, y, dialogue = [], spriteKey = 'pakala') {
+        super(x, y, 2, 3, (t, self) => {
+            const frames = gfx.props.npcs[self.spriteKey];
+            if (!frames) return gfx.props.npcs.pakala[0];
+            
+            //handle both animated arr and static 
+            if (Array.isArray(frames)) {
+                return frames[Math.floor(t * MNPC.ANIM_FPS) % frames.length];
+            }
+            return frames;
+        });
+
+        this.spriteKey = spriteKey;
+        this.dialogue = dialogue;
+        this.dialogueIndex = -1;
+        this.inRange = false;
+        this._prevSpace = false;
+
+        //html junk ask arrow
+        const overlay = document.getElementById('overlay');
+
+        this._bubble = document.createElement('div');
+        this._bubble.className = 'npc-bubble';
+        this._bubble.style.display = 'none';
+        overlay.appendChild(this._bubble);
+
+        this._prompt = document.createElement('div');
+        this._prompt.className = 'npc-prompt';
+        this._prompt.textContent = 'SPACE to talk';
+        this._prompt.style.display = 'none';
+        overlay.appendChild(this._prompt);
+    }
+
+    tick(dt) {
+        const player = this.engine?.player;
+        if (!player) return;
+
+        const events    = this.engine.events ?? {};
+        const spaceNow  = !!events.Space;
+        const spaceJust = spaceNow && !this._prevSpace;
+        this._prevSpace = spaceNow;
+
+        //proximity check
+        const cx = this.x + 1, cy = this.y + 1.5;
+        const px = player.x + player.w / 2, py = player.y + player.h / 2;
+        const dist = Math.hypot(px - cx, py - cy);
+        this.inRange = dist <= MNPC.TALK_RADIUS;
+
+        // lose dialogue if player walks away
+        if (!this.inRange) {
+            this.dialogueIndex = -1;
+        }
+
+        //advance n' open n' close on space
+        if (this.inRange && spaceJust) {
+            if (this.dialogueIndex === -1) {
+                this.dialogueIndex = 0;
+            }
+             else {
+                this.dialogueIndex++;
+                if (this.dialogueIndex >= this.dialogue.length) {
+                    this.dialogueIndex = -1;
+                }
+            }
+        }
+
+        this._syncHTML();
+    }
+
+    _syncHTML() {
+        if (!this.engine?.renderer) return;
+        const camera = this.engine.renderer.camera;
+
+        //pos both elements above the NPC's head
+        const { x: sx, y: sy } = camera.worldToScreen(this.x + 1, this.y - 0.3);
+
+        const talking = this.dialogueIndex >= 0 &&
+                        this.dialogueIndex < this.dialogue.length;
+
+        //yap bubble, I HATE modifying CSS with JS
+        if (talking) {
+            const line = this.dialogue[this.dialogueIndex];
+            const progress = `${this.dialogueIndex + 1} / ${this.dialogue.length}`;
+            this._bubble.innerHTML =
+                `${line.replace(/\n/g, '<br>')}`+
+                `<span class="npc-progress">${progress} &nbsp;[SPACE]</span>`;
+            this._bubble.style.left = `${sx}px`;
+            this._bubble.style.top = `${sy}px`;
+            this._bubble.style.display = 'block';
+        } else {
+            this._bubble.style.display = 'none';
+        }
+
+        //proximity prompt stuffs
+        if (this.inRange && !talking && this.dialogue.length > 0) {
+            this._prompt.style.left = `${sx}px`;
+            this._prompt.style.top = `${sy - 4}px`;
+            this._prompt.style.display = 'block';
+        } 
+        else {
+            this._prompt.style.display = 'none';
+        }
+    }
+
+    render(ctx, camera, t, pixel) {
+        super.render(ctx, camera, t, pixel);
+
+        //for debug stuffs
+        if (MNPC.DEBUG_RADIUS) {
+            const { x, y } = camera.worldToScreen(this.x + 1, this.y + 1.5);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,0,0,0.7)';
+            ctx.lineWidth = 2;
+            //I will forever use this (found out about it last month)
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.arc(x, y, MNPC.TALK_RADIUS * camera.tsz, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    //call this when room is bye bye so we don't get 10 missed calls from the DOM
+    destroy() {
+        this._bubble?.remove();
+        this._prompt?.remove();
     }
 }

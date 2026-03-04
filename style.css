@@ -111,3 +111,71 @@ canvas:focus {
 #console .info  { 
     color: #9ad0ff; 
 }
+
+.npc-bubble {
+    position: absolute;
+    transform: translateX(-50%) translateY(-100%);
+    margin-top: -12px;
+
+    background: #fff8e7;
+    border: 3px solid #2a1a1a;
+    border-radius: 6px;
+    padding: 8px 14px 10px;
+    max-width: 220px;
+    min-width: 80px;
+    text-align: center;
+
+    font-family: 'Exo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2a1a1a;
+    line-height: 1.4;
+
+    box-shadow: 3px 3px 0 #2a1a1a;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.1s;
+}
+
+.npc-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -14px; left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #2a1a1a;
+}
+
+.npc-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -9px; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #fff8e7;
+    z-index: 1;
+}
+
+.npc-bubble .npc-progress {
+    display: block;
+    margin-top: 5px;
+    font-size: 10px;
+    color: #9a7a5a;
+    letter-spacing: 0.05em;
+}
+
+.npc-prompt {
+    position: absolute;
+    transform: translateX(-50%) translateY(-100%);
+    font-family: 'Exo', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #2a1a1a;
+    border: 2px solid #fff8e7;
+    border-radius: 4px;
+    padding: 1px 5px;
+    pointer-events: none;
+    z-index: 19;
+    white-space: nowrap;
+}

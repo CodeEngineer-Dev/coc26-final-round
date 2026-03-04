@@ -194,7 +194,7 @@
         };
 
         const builder = new WorldBuilder(engine, 1, tileMap);
-        const world   = new WorldManager(engine, roomTemplates, worldAssembly, builder);
+        const world = new WorldManager(engine, roomTemplates, worldAssembly, builder);
         
         //for those of you who play clash royale -> heheheha
         world.onEnemySpawn = (type, x, y) => {
@@ -212,6 +212,10 @@
                 return; 
             }
         };
+
+        
+        MNPC.DEBUG_RADIUS = true;
+
 
         world.loadRoom(0, 0);
 
