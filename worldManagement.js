@@ -28,7 +28,7 @@ const roomTemplates = {
             'e': (x, y) => new MBlob(x, y, 'g1'),
             'K': (x, y) => new MCheckpoint(x, y - 3),
             'N': (x, y) => new MNPC(x, y - 0.5, [
-                "hiiiii",
+                "hiiiii",   
                 "My name is classified",
                 ".",
                 "..",
