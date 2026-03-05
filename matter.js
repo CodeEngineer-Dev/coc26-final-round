@@ -413,6 +413,84 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.maxDrag = 120;
         }
 
+
+        _separateFromEnemies() {
+            const room = this.room;
+            const world = this.engine?.world;
+            if (!room || !world) return;
+
+            for (const z of room.indices) {
+                for (const obj of room.zia[z]) {
+                    if (!(obj instanceof MEnemy) || obj.dead) continue;
+
+                    const overlapX = (this.x + this.w / 2) - (obj.x + obj.w / 2);
+                    const overlapY = (this.y + this.h / 2) - (obj.y + obj.h / 2);
+                    const minDistX = (this.w + obj.w) / 2;
+                    const minDistY = (this.h + obj.h) / 2;
+                    const absX = Math.abs(overlapX);
+                    const absY = Math.abs(overlapY);
+
+                    if (absX < minDistX && absY < minDistY) {
+                        if (minDistX - absX < minDistY - absY) {
+                            //horizontal
+                            const push = minDistX - absX;
+                            const prevX = this.x;
+                            this.x += overlapX > 0 ? push : -push;
+                            this.updateHitbox();
+                            if (this.touching(MSolid, world)) {
+                                this.x = prevX;
+                                this.updateHitbox();
+                                const prevObjX = obj.x;
+                                obj.x += overlapX > 0 ? -push : push;
+                                obj.updateHitbox();
+                                if (obj.touching(MSolid, world)) {
+                                    obj.x = prevObjX;
+                                    obj.updateHitbox();
+                                }
+                            }
+                        } else {
+                            //vertical
+                            const push = minDistY - absY;
+                            if (overlapY < 0) {
+                                this._groundedOnEnemy = true;
+                                if (this._standingOnEnemy !== obj) {
+                                    this._standingOnEnemy = obj;
+                                    this._standingOnEnemyTimer = 0;
+                                }
+                                this._standingOnEnemyTimer += this.engine.lastDt ?? 0;
+                                if (this._standingOnEnemyTimer >= 1.0) {
+                                    this._standingOnEnemyTimer = 0;
+                                    obj.onPlayerContact(this);
+                                }
+
+                                //player on top of enemy
+                                this.y -= push;
+                                this.yv = Math.min(this.yv, 0);
+                                this.grounded = true;
+                                this.updateHitbox();
+
+                                //player should be able to jumnp of enemy...
+                                const events = this.engine.events ?? {};
+                                if (events.KeyW) {
+                                    this.yv = -this.engine.jump;
+                                    this.grounded = false;  
+                                }
+                            } else {
+                                //player above enemy
+                                const prevY = this.y;
+                                this.y += push;
+                                this.updateHitbox();
+                                if (this.touching(MSolid, world)) {
+                                    this.y = prevY;
+                                    this.updateHitbox();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         /** Tick the game forward
          * 
          * @param {number} dt 
@@ -440,6 +518,13 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 : events;
 
             super.tick(dt, physEvents);
+            if (!this._groundedOnEnemy) {
+                this._standingOnEnemy = null;
+                this._standingOnEnemyTimer = 0;
+            }
+            this._groundedOnEnemy = false;
+
+            this._separateFromEnemies();
             this.ball?.tick?.(dt, {}, { friction: 1 });
 
             // if (events.Mouse && !eventsPrev.Mouse && !this.ball) {
@@ -802,11 +887,16 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this._pathTimer = interval;
 
             const p = this.engine?.player;
-            //prefer this enemy's room graph so multi-room pathfinding stays local
             const g = this.room?.graph ?? this.engine?.graph;
             if (!p || !g) return;
 
-            this._path = g.findPath(this.x, this.y, p.x, p.y);
+            //centering is better
+            this._path = g.findPath(
+                this.x + this.w / 2,
+                this.y + this.h,
+                p.x + p.w / 2,
+                p.y + p.h
+            );
         }
 
         /**
@@ -815,24 +905,36 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          * @param {number} dt
          */
         _followPath(dt) {
+
+            //screw comments
+
             if (!this._path?.length) return;
 
             const step = this._path[0];
-            const targetX = step.c + 0.5; 
+            const targetX = step.c + 0.5;
             const myX = this.x + this.w / 2;
             const dx = targetX - myX;
 
-            //steer horizontally toward waypoint
             if (Math.abs(dx) > 0.12) {
                 if (dx > 0) this._moveRight = true;
                 else this._moveLeft  = true;
                 this.facing = dx > 0 ? 1 : -1;
             }
 
-            //fire jump when the step requires it and we are on the ground
-            if (step.jump && this.grounded) this._jumpQueued = true;
+            if (step.jump) {
+                if (this.grounded) {
+                    const wallBlocked = Math.abs(this.xv) < 0.15 && Math.abs(dx) > 0.3;
+                    if (Math.abs(dx) < 1.5 || wallBlocked) {
+                        this._jumpQueued = true;
+                    }
+                }
+                if (!this.grounded) {
+                    this._path.shift();
+                    this._pathStuck = 0;
+                }
+                return;
+            }
 
-            //stuck detection
             if (this.grounded && Math.abs(this.xv) < 0.1 && Math.abs(dx) > 0.4) {
                 this._pathStuck += dt;
                 if (this._pathStuck > 0.4) { this._path.shift(); this._pathStuck = 0; }
@@ -840,22 +942,51 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 this._pathStuck = 0;
             }
 
-            //advance to next waypoint once close enough
             if (Math.abs(dx) < 0.35) { this._path.shift(); this._pathStuck = 0; }
         }
 
+        _separateFromEnemies() {
+            // const room = this.room;
+            // const world = this.engine?.world;
+            // if (!room || !world) return;
+
+            // for (const z of room.indices) {
+            //     for (const obj of room.zia[z]) {
+            //         if (obj === this || !(obj instanceof MEnemy) || obj.dead) continue;
+
+            //         const overlapX = (this.x + this.w / 2) - (obj.x + obj.w / 2);
+            //         const overlapY = (this.y + this.h / 2) - (obj.y + obj.h / 2);
+            //         const minDistX = (this.w + obj.w) / 2;
+            //         const minDistY = (this.h + obj.h) / 2;
+            //         const absX = Math.abs(overlapX);
+            //         const absY = Math.abs(overlapY);
+
+            //         if (absX < minDistX && absY < minDistY) {
+            //             const push = (minDistX - absX) / 2;
+            //             const prevX = this.x;
+            //             this.x += overlapX > 0 ? push : -push;
+            //             this.updateHitbox();
+            //             if (this.touching(MSolid, world)) {
+            //                 this.x = prevX;
+            //                 this.updateHitbox();
+            //             }const prevObjX = obj.x;
+            //             obj.x += overlapX > 0 ? -push : push;
+            //             obj.updateHitbox();
+            //             if (obj.touching(MSolid, world)) {
+            //                 obj.x = prevObjX;
+            //                 obj.updateHitbox();
+            //             }
+            //         }
+            //     }
+            // }
+        }
+        
+
         /** @param {number} dt */
-        tick(dt) {  
+        tick(dt) {
             if (this.dead) return;
 
-            this.updateHitbox();
-
             if (this.contactCooldown > 0) this.contactCooldown -= dt;
-
-            const player = this.engine?.player;
-            if (player && this.hbox.collision(player.hbox) && this.contactCooldown <= 0) {    this.onPlayerContact(player);
-                this.contactCooldown = 0.6;
-            }
 
             this.stateTime += dt;
             this.ai(dt);
@@ -867,16 +998,36 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             };
             this._moveLeft = this._moveRight = this._jumpQueued = false;
 
-            super.tick(dt, fakeEvents);
+            //physics first!
+            super.tick(dt, fakeEvents, { hvel: this.moveSpeed ?? 4 });
+            this._separateFromEnemies();
+
+            //check for contact
+            const player = this.engine?.player;
+            if (player && player.room === this.room && this.contactCooldown <= 0) {
+                //update both (certainty check)
+                this.updateHitbox();
+                player.updateHitbox();
+
+                if (this.hbox.collision(player.hbox)) {
+                    this.onPlayerContact(player);
+                    this.contactCooldown = 0.6;
+                }
+            }
         }
 
-        /** Called every frame the enemy overlaps the player.
-         *  Override in subclasses for custom contact effects.
+        /** Called every frame the enemy overlaps the player
+         * The idea here is to make sure that the player can jump off enemies but still take damage per touch.
          * @param {MPlayer} player
          */
         onPlayerContact(player) {
-            //nock the player back and deal 1 heart of damage (33 hp)
-            player.xv = (player.x < this.x ? -1 : 1) * 15;
+            const dy = (player.y + player.h / 2) - (this.y + this.h / 2);
+            
+            //player standing on enemy
+            //if (dy < -0.1 && player.yv >= 0) return;
+
+            const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
+            player.xv = Math.sign(dx || 1) * 15;
             player.yv = -10;
             player.health = Math.max(0, player.health - 34);
         }
@@ -965,7 +1116,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                     room.height = height;
                     
                     if (typeof PlatformGraph !== 'undefined') {
-                        room.graph = new PlatformGraph(bitmap, tileMap);
+                        room.graph = new PlatformGraph(bitmap, tileMap, this.engine);
                     }
 
                     this._spawnEntities(room, bitmap, entityMap);
@@ -1425,6 +1576,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          */
         tick(t, dt, events) {
             this.events = events;
+            this.lastDt = dt;
             this.renderer.render(t);
             this.player.tick(dt, events);
             if (this.player.health <= 0) {
@@ -1649,9 +1801,14 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          * @param {string[]} bitmap
          * @param {Object} tileMap
          */
-        constructor(bitmap, tileMap) {
+        constructor(bitmap, tileMap, engine = null) {
             this.bitmap = bitmap;
             this.tileMap = tileMap;
+            const jump = engine?.jump ?? 20;
+            const gravity = engine?.gravity ?? 80;
+            this.JUMP_H = Math.max(1, Math.ceil((jump * jump) / (2 * gravity)) + 1);
+            this.JUMP_W = this.JUMP_H + 3;
+
             this.nodes = this._build();
         }
 
@@ -1680,8 +1837,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                         nodes.set(`${c},${r}`, { c, r, edges: [] });
             
             //jump stuff
-            const JUMP_H = 5;
-            const JUMP_W = 5;
+            const JUMP_H = this.JUMP_H; 
+            const JUMP_W = this.JUMP_W;
 
             //connect nodes with edges
             for (const [, node] of nodes) {
@@ -1720,11 +1877,24 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             return nodes;
         }
 
-        /** Snaps (c, r) to the nearest standable node, searching downward up to 3 tiles. */
+        /** I changed this but don't feel like updating its comment */
         _nearestKey(c, r) {
+            //search down first
             for (let dr = 0; dr <= 3; dr++) {
                 const k = `${c},${r + dr}`;
                 if (this.nodes.has(k)) return k;
+            }
+            //also search upward in case entity is slightly above a standable tile
+            for (let dr = 1; dr <= 3; dr++) {
+                const k = `${c},${r - dr}`;
+                if (this.nodes.has(k)) return k;
+            }
+            //try adjacent columns as fallback when rounding puts us in a wall
+            for (const dc of [-1, 1]) {
+                for (let dr = -2; dr <= 3; dr++) {
+                    const k = `${c + dc},${r + dr}`;
+                    if (this.nodes.has(k)) return k;
+                }
             }
             return null;
         }
@@ -1746,8 +1916,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          * Returns null if no path exists, [] if already at goal.
          */
         findPath(fx, fy, tx, ty) {
-            const startKey = this._nearestKey(Math.round(fx), Math.round(fy));
-            const goalKey = this._nearestKey(Math.round(tx), Math.round(ty));
+            const startKey = this._nearestKey(Math.round(fx), Math.floor(fy));
+            const goalKey  = this._nearestKey(Math.round(tx), Math.floor(ty));
 
             if (!startKey || !goalKey)  return null;
             if (startKey === goalKey)   return [];
@@ -1801,6 +1971,9 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.deAggroRange = big ? 12 : 9;
             this.chaseMode = false;  
             this.aggroLatch = 0;
+            
+            //speed can be adjusted
+            this.moveSpeed = big ? 4 : 10;
         } 
 
         ai(dt) {
