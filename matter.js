@@ -611,6 +611,29 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 this.dragInitY = events.MouseY;
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
+
+                //push player out of any wall they landed in
+                const world = this.engine.world;
+                this.updateHitbox();
+                if (this.touching(MSolid, world)) {
+                    //try nudging in the direction the ball was travelling
+                    const nudges = [
+                        [Math.sign(this.xv) * (this.w + this.engine.epsilon), 0],
+                        [0, Math.sign(this.yv) * (this.h + this.engine.epsilon)],
+                        [-Math.sign(this.xv) * (this.w + this.engine.epsilon), 0],
+                        [0, -Math.sign(this.yv) * (this.h + this.engine.epsilon)],
+                    ];
+                    for (const [nx, ny] of nudges) {
+                        this.x += nx;
+                        this.y += ny;
+                        this.updateHitbox();
+                        if (!this.touching(MSolid, world)) break;
+                        this.x -= nx;
+                        this.y -= ny;
+                        this.updateHitbox();
+                    }
+                }
+                this.transport();
             }
 
             //exit slowmo on keypress or on landing also pretty important

@@ -135,7 +135,7 @@
                 switch (this.dir) {
                     case 'right':  
                         return { x: -w * p, y: 0 };
-                    case 'left':   
+                    case 'left':    
                         return { x:  w * p, y: 0 };
                     case 'bottom': 
                         return { x: 0, y: -h * p };
@@ -278,7 +278,7 @@
         let firstTime = performance.now();
         let frameCount = 0, dtMs, dt, tMs, t, fps;
 
-        //a render loop with a timestamp for dt updating @Judges
+        //a render loop with a timestamp for dt updating
         const render = (timestamp) => {
             //try {
                 //prefer the rAF timestamp when present
