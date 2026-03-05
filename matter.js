@@ -326,7 +326,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             super(
                 player.x + player.w / 2,
                 player.y + player.h / 2,
-                0, 0, 1, (t, object) => gfx.player.idle[0]
+                0, 0, 1, (t, object) => gfx.player.spikeBall
             );
             this.x = player.x + player.w / 2;
             this.y = player.y + player.h / 2;
@@ -418,6 +418,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.dragX = 0;
             this.dragY = 0;
             this.ball = null;
+
+            this.maxDrag = 120;
         }
 
         /** Tick the game forward
@@ -461,9 +463,21 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             } else if (!events.Mouse && this.dragging) {
                 this.dragging = false;
                 const tsz = this.engine.renderer.camera.tsz;
+                
+                let dx = this.dragX - this.dragInitX;
+                let dy = this.dragY - this.dragInitY;
+                
+                //limit
+                const maxDrag = this.maxDrag;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len > maxDrag) {
+                    dx = dx / len * maxDrag;
+                    dy = dy / len * maxDrag;
+                }
+
                 this.ball = new MBall(this,
-                    (this.dragX - this.dragInitX) / tsz * this.constructor.throwFactor,
-                    (this.dragY - this.dragInitY) / tsz * this.constructor.throwFactor,
+                    dx / tsz * MPlayer.throwFactor,
+                    dy / tsz * MPlayer.throwFactor,
                 );
             } else if ((events.Mouse && this.ball) || this.ball?.dead) {
                 const epsilon = this.engine.epsilon;
@@ -594,15 +608,20 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                     this.x + this.w / 2,
                     this.y + this.h / 2
                 );
+                let dx = this.dragX - this.dragInitX;
+                let dy = this.dragY - this.dragInitY;
+                const maxDrag = this.maxDrag;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len > maxDrag) {
+                    dx = dx / len * maxDrag;
+                    dy = dy / len * maxDrag;
+                }
                 ctx.save();
                 ctx.strokeStyle = "#ffffff";
                 ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.moveTo(x, y);
-                ctx.lineTo(
-                    x + this.dragX - this.dragInitX,
-                    y + this.dragY - this.dragInitY
-                );
+                ctx.lineTo(x + dx, y + dy);
                 ctx.stroke();
                 ctx.restore();
             }
