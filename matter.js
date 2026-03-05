@@ -430,6 +430,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.groundPoundTime = 0; 
             this.impactTime = null;
             this.prevKeyS = false;
+            this.prevMouse = false;
             this.dragging = false;
             this.dragInitX = 0;
             this.dragInitY = 0;
@@ -526,7 +527,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          */ 
         tick(dt, events) {
             const canGroundPound = !this.grounded && !this.groundPounding && (this.airTime ?? 0) > 0.1;
-            const keySJustPressed = events.KeyS && !this.prevKeyS; 
+            const keySJustPressed = events.KeyS && !this.prevKeyS;
 
             if (canGroundPound && keySJustPressed) {
                 this.groundPounding = true;
@@ -554,169 +555,74 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this._separateFromEnemies();
             this.ball?.tick?.(dt, {}, { friction: 1 });
 
-            // if (events.Mouse && !eventsPrev.Mouse && !this.ball) {
-            //     this.dragging = true;
-            //     this.dragInitX = events.MouseX;
-            //     this.dragInitY = events.MouseY;
-            //     this.dragX = events.MouseX;
-            //     this.dragY = events.MouseY;
-            // } else if (events.Mouse && this.dragging) {
-            //     this.dragX = events.MouseX;
-            //     this.dragY = events.MouseY;
-            // } else if (!events.Mouse && this.dragging) {
-            //     this.dragging = false;
-            //     const tsz = this.engine.renderer.camera.tsz;
-                
-            //     let dx = this.dragX - this.dragInitX;
-            //     let dy = this.dragY - this.dragInitY;
-                
-            //     //limit
-            //     const maxDrag = this.maxDrag;
-            //     const len = Math.sqrt(dx * dx + dy * dy);
-            //     if (len > maxDrag) {
-            //         dx = dx / len * maxDrag;
-            //         dy = dy / len * maxDrag;
-            //     }
+            //during slowmo keep ball glued to player center so they fall together
+            if (this.ball && this.engine.slowMo) {
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
+                this.ball.y = this.y + this.h / 2 - this.ball.h / 2;
+                this.ball.room = this.room;
+                this.ball.updateHitbox();
+            }
 
-            //     this.ball = new MBall(this,
-            //         dx / tsz * MPlayer.throwFactor,
-            //         dy / tsz * MPlayer.throwFactor,
-            //     );
-            // } else if ((events.Mouse && this.ball) || this.ball?.dead) {
-            //     const epsilon = this.engine.epsilon;
-            //     if (this.ball.xv > 0) {
-            //         this.x = this.ball.hbox.x2 - this.w - epsilon;
-            //     } else {
-            //         this.x = this.ball.hbox.x1 + epsilon;
-            //     }
-            //     if (this.ball.yv > 0) {
-            //         this.y = this.ball.hbox.y2 - this.h - epsilon;
-            //     } else {
-            //         this.y = this.ball.hbox.y1 + epsilon;
-            //     }
-            //     this.transport();
-
-            //     // TODO: add stuck logic in case the ball is falling downward but there's a block above!!!!
-
-            //     /*
-            //     const solidsTouched = this.touchingAll(MSolid, this.engine.world);
-            //     const collisions = [];
-                
-            //     // this is a mechanic originating from xyzyyxx's platformer engine
-            //     // adapted to this situation
-            //     for (const s of solidsTouched) {
-            //         // this is an array for the four directions the ball could've
-            //         // collided with the solid
-            //         const collCandidates = [];
-
-            //         // logic: rt gets the time at which it was collided
-            //         // ry gets the ball's y position at the time, to verify if it's
-            //         // legit and not off the segment
-            //         const rt = antilerp(this.ball.px, this.ball.x, s.hbox.x1);
-            //         const ry = lerp(this.ball.py, this.ball.y, rt);
-            //         if (rt >= 0 && rt <= 1 && ry >= s.hbox.y1 && ry <= s.hbox.y2) {
-            //             collCandidates.push({ t: rt, solid: s, side: "r" });
-            //         }
-
-            //         // same for all 4 sides
-            //         // down
-            //         const dt = antilerp(this.ball.py, this.ball.y, s.hbox.y1);
-            //         const dx = lerp(this.ball.px, this.ball.x, dt);
-            //         if (dt >= 0 && dt <= 1 && dx >= s.hbox.x1 && dx <= s.hbox.x2) {
-            //             collCandidates.push({ t: dt, solid: s, side: "d" });
-            //         }
-
-            //         // left
-            //         const lt = antilerp(this.ball.px, this.ball.x, s.hbox.x2);
-            //         const ly = lerp(this.ball.py, this.ball.y, rt);
-            //         if (lt >= 0 && lt <= 1 && ly >= s.hbox.y1 && ly <= s.hbox.y2) {
-            //             collCandidates.push({ t: lt, solid: s, side: "l" });
-            //         }
-
-            //         // up
-            //         const ut = antilerp(this.ball.py, this.ball.y, s.hbox.y2);
-            //         const ux = lerp(this.ball.ux, this.ball.x, ut);
-            //         if (ut >= 0 && ut <= 1 && ux >= s.hbox.x1 && ux <= s.hbox.x2) {
-            //             collCandidates.push({ t: ut, solid: s, side: "u" });
-            //         }
-            //         window.console.log(this.ball, s, collCandidates);
-            //         // add to collisions the first of the four
-            //         collisions.push(collCandidates.reduce((min, current) => {
-            //             if (!min || min.t > current.t) {
-            //                 return current;
-            //             } else {
-            //                 return min;
-            //             }
-            //         }));
-            //     }
-
-            //     // sort collisions by earliest to latest
-            //     collisions.sort((a, b) => a.t - b.t);
-
-            //     for (const coll in collisions) {
-            //         if (this.hbox.collide(coll.solid.hbox)) {
-            //             switch (coll.side) {
-            //                 case "r": this.x = coll.solid.x - this.w; break;
-            //                 case "d": this.y = coll.solid.y - this.h; break;
-            //                 case "l": this.x = coll.solid.x + coll.solid.w; window.console.log(coll); break;
-            //                 case "u": this.y = coll.solid.y + coll.solid.h; break;
-            //             }
-            //             this.transport();
-            //         }
-            //     }*/
-
-            //     this.ball = null;
-            // }
-
-            if (events.Mouse && !eventsPrev.Mouse && !this.ball) {
+            if (events.Mouse && !this.prevMouse && !this.ball) {
+                //start drag
                 this.dragging = true;
                 this.dragInitX = events.MouseX;
                 this.dragInitY = events.MouseY;
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
+
             } else if (events.Mouse && this.dragging) {
+                //update drag
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
+
             } else if (!events.Mouse && this.dragging) {
+                //release an' throw ball, exit any existing slowmo
                 this.dragging = false;
+                this.engine.slowMo = false;
+                //discard if one existed during slowmo...
+                this.ball = null;
                 const tsz = this.engine.renderer.camera.tsz;
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
                 const maxDrag = 120;
                 const len = Math.sqrt(dx * dx + dy * dy);
-                if (len > maxDrag) { dx = dx / len * maxDrag; dy = dy / len * maxDrag; }
+                if (len > maxDrag) { 
+                    dx = dx / len * maxDrag; 
+                    dy = dy / len * maxDrag; 
+                }
                 this.ball = new MBall(this,
                     dx / tsz * MPlayer.throwFactor,
                     dy / tsz * MPlayer.throwFactor,
                 );
-            } else if (events.Mouse && !eventsPrev.Mouse && this.ball) {
-                //teleport to ball, inherit its momentum
+
+            } else if (events.Mouse && !this.prevMouse && this.ball) {
+                //click while ball is out so holding and dragging right away works for quick chaining
                 this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
                 this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
                 this.xv = this.ball.xv;
                 this.yv = this.ball.yv;
                 this.room = this.ball.room;
                 this.transport();
-                this.ball = null;/*
-                const touched = this.touchingAll(MSolid, this.engine.world);
-                let xFloor = -Infinity, xCeil = Infinity,
-                    yFloor = -Infinity, yCeil = Infinity;
-                for (const solid in touched) {
-                    // 67
-                    if (solid.hbox.x2 < this.hbox.x2 && solid.hbox.x2 > xFloor) {
-                        xFloor = solid.hbox.x2;
-                    }
-                    if (this.hbox.x1 < solid.hbox.x1 && solid.hbox.x1 < xCeil) {
-                        xCeil = solid.hbox.x1;
-                    }
-                    if (solid.hbox.y2 < this.hbox.y2 && solid.hbox.y2 > yFloor) {
-                        yFloor = solid.hbox.y2;
-                    }
-                    if (this.hbox.y1 < solid.hbox.y1 && solid.hbox.y1 < yCeil) {
-                        yCeil = solid.hbox.y1;
-                    }
+                this.engine.slowMo = true;
+                //ball stays alive
+                this.dragging = true;
+                this.dragInitX = events.MouseX;
+                this.dragInitY = events.MouseY;
+                this.dragX = events.MouseX;
+                this.dragY = events.MouseY;
+            }
+
+            //exit slowmo on keypress or on landing also pretty important
+            if (this.engine.slowMo) {
+                if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+                    this.engine.slowMo = false;
+                    this.ball = null;
                 }
-                */
+                if (this.grounded && !this._wasGrounded) {
+                    this.engine.slowMo = false;
+                    this.ball = null;
+                }
             }
 
             if (events.KeyA) this.facing = -1;
@@ -744,6 +650,9 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 this.airTime = 0;
                 this.state = Math.abs(this.xv) > 0.5 ? 'run' : 'idle';
             }
+
+            this._wasGrounded = this.grounded;
+            this.prevMouse = events.Mouse;
         }
 
         /** Renders the thing
@@ -1552,6 +1461,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.jump = jump ?? 20;
             this.epsilon = 0.001; // small value to prevent unwanted collisions
             this.groundPoundMult = groundPoundMult ?? 2;
+            this.slowMo = false;
+            this.slowMoScale = 0.15; // how slow "slow" is lol
             this.renderer = null;
             this.world = new MWorld(this);
         }
@@ -1602,6 +1513,8 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          * @returns {void}
          */
         tick(t, dt, events) {
+            //for the slowmo effect with the ball
+            if (this.slowMo) dt *= this.slowMoScale;
             this.events = events;
             this.lastDt = dt;
             this.renderer.render(t);

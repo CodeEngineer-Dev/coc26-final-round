@@ -352,6 +352,19 @@
                     ctx.save();
                     ctx.translate(shake.x, shake.y);
                     engine.tick(t, dt, events);
+                    
+                    //crazy Arrow idea lol
+                    if (engine.slowMo) {
+                        const grad = ctx.createRadialGradient(
+                            width / 2, height / 2, height * 0.2,
+                            width / 2, height / 2, height * 0.85
+                        );
+                        grad.addColorStop(0, 'rgba(30, 80, 180, 0)');
+                        grad.addColorStop(1, 'rgba(10, 30, 120, 0.55)');
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 0, width, height);
+                    }
+
                     ctx.restore();
                     roomTransition.tick(dt);
                 }
