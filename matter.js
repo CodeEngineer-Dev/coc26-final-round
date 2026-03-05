@@ -400,7 +400,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.state = 'idle';
             this.facing = 1;
             this.groundPounding = false;
-            this.groundPoundTime = 0;
+            this.groundPoundTime = 0; 
             this.impactTime = null;
             this.prevKeyS = false;
             this.dragging = false;
@@ -570,7 +570,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 const tsz = this.engine.renderer.camera.tsz;
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
-                const maxDrag = 80;
+                const maxDrag = 120;
                 const len = Math.sqrt(dx * dx + dy * dy);
                 if (len > maxDrag) { dx = dx / len * maxDrag; dy = dy / len * maxDrag; }
                 this.ball = new MBall(this,
@@ -771,6 +771,10 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
 
         /** Returns Euclidean distance to player. */
         _playerDist() {
+            const p = this.engine?.player;
+            if (!p) return Infinity;
+            //so if in a differant room they ignore the player (patrol mode kinda)
+            if (p.room !== this.room) return Infinity;
             const dx = this._playerDX(), dy = this._playerDY();
             return Math.sqrt(dx * dx + dy * dy);
         }
@@ -841,14 +845,15 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
         }
 
         /** @param {number} dt */
-        tick(dt) {
+        tick(dt) {  
             if (this.dead) return;
+
+            this.updateHitbox();
 
             if (this.contactCooldown > 0) this.contactCooldown -= dt;
 
             const player = this.engine?.player;
-            if (player && this.hbox.collision(player.hbox) && this.contactCooldown <= 0) {
-                this.onPlayerContact(player);
+            if (player && this.hbox.collision(player.hbox) && this.contactCooldown <= 0) {    this.onPlayerContact(player);
                 this.contactCooldown = 0.6;
             }
 
@@ -1111,13 +1116,26 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 entity.y -= height;
             }
             entity.updateHitbox();
+            
+            //move enemy between rooms yes
+            if (entity.room !== oldRoom) {
+                for (const z of oldRoom.indices) {
+                    const arr = oldRoom.zia[z];
+                    const idx = arr.indexOf(entity);
+                    if (idx !== -1) {
+                        arr.splice(idx, 1);
+                        this.add(entity.room, entity, z);
+                        break;
+                    }
+                }
 
-            if (entity === this.engine?.player && entity.room !== oldRoom && !entity._roomChangedThisFrame) {
-                const dr = entity.room.row - oldRoom.row;
-                const dc = entity.room.col - oldRoom.col;
-                const dir = dc > 0 ? 'right' : dc < 0 ? 'left' : dr > 0 ? 'bottom' : 'top';
-                entity._roomChangedThisFrame = true;
-                this.engine.onRoomChange?.(dir);
+                if (entity === this.engine?.player && !entity._roomChangedThisFrame) {
+                    const dr = entity.room.row - oldRoom.row;
+                    const dc = entity.room.col - oldRoom.col;
+                    const dir = dc > 0 ? 'right' : dc < 0 ? 'left' : dr > 0 ? 'bottom' : 'top';
+                    entity._roomChangedThisFrame = true;
+                    this.engine.onRoomChange?.(dir);
+                }
             }
         }
 
@@ -1152,7 +1170,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 }
             }
             for (const entity of room.entities) {
-                const retval = callback(obj);
+                const retval = callback(entity);
                 if (typeof retval !== "undefined") return retval;
             }
         }
@@ -1421,8 +1439,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             //this.player._transportLock = false;
             this.player._roomChangedThisFrame = false;
 
-            //tick every enemy each frame (hey xyz I changed this to make it only run per room jsyk)
-            this.world.iterateRoom(this.player.room, obj => {
+            this.world.iterate(obj => {
                 if (obj !== this.player && typeof obj.tick === 'function') obj.tick(dt);
             });
         }

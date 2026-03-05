@@ -22,7 +22,7 @@ const roomTemplates = {
             "#   BBBB            ",
             "# e E BB  C     N   ",
             "####################",
-        ],
+        ],  
         entities: {
             'E': (x, y) => new MBlob(x, y, 'g2'),
             'e': (x, y) => new MBlob(x, y, 'g1'),
