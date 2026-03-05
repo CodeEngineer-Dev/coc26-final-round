@@ -322,72 +322,63 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
     }
 
     class MBall extends MEntity {
+        static bounce = 0.65;
+
         constructor(player, xv, yv) {
+            const w = 1, h = 1;
             super(
-                player.x + player.w / 2,
-                player.y + player.h / 2,
-                0, 0, 1, (t, object) => gfx.player.spikeBall
+                player.x + player.w / 2 - w / 2,
+                player.y + player.h / 2 - h / 2,
+                w, h, 1, () => gfx.player.spikeBall
             );
-            this.x = player.x + player.w / 2;
-            this.y = player.y + player.h / 2;
-            this.px = this.x;
-            this.py = this.y;
             this.xv = xv;
             this.yv = yv;
             this.engine = player.engine;
             this.room = player.room;
-            this.dead = false;
+            this.angle = 0;
         }
+
         render(ctx, camera, t, pixel) {
             const { x, y } = camera.worldToScreen(this.x, this.y);
             const sprite = this.texturer(t, this);
-    
-            //offset so sprite is centered on hitbox
-            const offsetX = (this.w * camera.tsz - sprite.w * pixel) / 2;
-            const offsetY = (this.h * camera.tsz - sprite.h * pixel) / 2;
+            const sw = sprite.w * pixel;
+            const sh = sprite.h * pixel;
+            const cx = x + (this.w * camera.tsz) / 2;
+            const cy = y + (this.h * camera.tsz) / 2;
 
-            sprite.draw(ctx, x + offsetX, y + offsetY, pixel, this.facing ?? 1);
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(this.angle);
+            sprite.draw(ctx, -sw / 2, -sh / 2, pixel);
+            ctx.restore();
         }
-        /** Tick the ball forward   
-         * 
-         * @param {number} dt 
-         * @returns {void}
-         */
+
         tick(dt) {
-            this.px = this.x;
-            this.py = this.y;
             const { world, gravity } = this.engine;
+
             this.x += this.xv * dt;
             this.transport();
             const xt = this.touching(MSolid, world);
             if (xt) {
-                // doing this makes things MUCH more convenient
-                // when teleporting
-                if (this.xv > 0) {
-                    this.x = xt.hbox.x1;
-                } else {
-                    this.x = xt.hbox.x2;
-                }
-                this.dead = true;
+                this.x = this.xv > 0 ? xt.hbox.x1 - this.w : xt.hbox.x2;
+                this.xv *= -MBall.bounce;
             }
+
             this.yv += gravity * dt;
             this.y += this.yv * dt;
             this.transport();
             const yt = this.touching(MSolid, world);
             if (yt) {
-                if (this.yv > 0) {
-                    this.y = yt.hbox.y1;
-                } else {
-                    this.y = yt.hbox.y2;
-                }
-                this.dead = true;
+                this.y = this.yv > 0 ? yt.hbox.y1 - this.h : yt.hbox.y2;
+                this.yv *= -MBall.bounce;
             }
+
+            //spin proportional to horizontal speed
+            this.angle += this.xv * dt * 3;
             this.transport();
-            if (this.touching(MHazard, world)) {
-                this.dead = true;
-            }
         }
     }
+
 
     /** MPlayer: the player.
      * 
@@ -451,6 +442,120 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             super.tick(dt, physEvents);
             this.ball?.tick?.(dt, {}, { friction: 1 });
 
+            // if (events.Mouse && !eventsPrev.Mouse && !this.ball) {
+            //     this.dragging = true;
+            //     this.dragInitX = events.MouseX;
+            //     this.dragInitY = events.MouseY;
+            //     this.dragX = events.MouseX;
+            //     this.dragY = events.MouseY;
+            // } else if (events.Mouse && this.dragging) {
+            //     this.dragX = events.MouseX;
+            //     this.dragY = events.MouseY;
+            // } else if (!events.Mouse && this.dragging) {
+            //     this.dragging = false;
+            //     const tsz = this.engine.renderer.camera.tsz;
+                
+            //     let dx = this.dragX - this.dragInitX;
+            //     let dy = this.dragY - this.dragInitY;
+                
+            //     //limit
+            //     const maxDrag = this.maxDrag;
+            //     const len = Math.sqrt(dx * dx + dy * dy);
+            //     if (len > maxDrag) {
+            //         dx = dx / len * maxDrag;
+            //         dy = dy / len * maxDrag;
+            //     }
+
+            //     this.ball = new MBall(this,
+            //         dx / tsz * MPlayer.throwFactor,
+            //         dy / tsz * MPlayer.throwFactor,
+            //     );
+            // } else if ((events.Mouse && this.ball) || this.ball?.dead) {
+            //     const epsilon = this.engine.epsilon;
+            //     if (this.ball.xv > 0) {
+            //         this.x = this.ball.hbox.x2 - this.w - epsilon;
+            //     } else {
+            //         this.x = this.ball.hbox.x1 + epsilon;
+            //     }
+            //     if (this.ball.yv > 0) {
+            //         this.y = this.ball.hbox.y2 - this.h - epsilon;
+            //     } else {
+            //         this.y = this.ball.hbox.y1 + epsilon;
+            //     }
+            //     this.transport();
+
+            //     // TODO: add stuck logic in case the ball is falling downward but there's a block above!!!!
+
+            //     /*
+            //     const solidsTouched = this.touchingAll(MSolid, this.engine.world);
+            //     const collisions = [];
+                
+            //     // this is a mechanic originating from xyzyyxx's platformer engine
+            //     // adapted to this situation
+            //     for (const s of solidsTouched) {
+            //         // this is an array for the four directions the ball could've
+            //         // collided with the solid
+            //         const collCandidates = [];
+
+            //         // logic: rt gets the time at which it was collided
+            //         // ry gets the ball's y position at the time, to verify if it's
+            //         // legit and not off the segment
+            //         const rt = antilerp(this.ball.px, this.ball.x, s.hbox.x1);
+            //         const ry = lerp(this.ball.py, this.ball.y, rt);
+            //         if (rt >= 0 && rt <= 1 && ry >= s.hbox.y1 && ry <= s.hbox.y2) {
+            //             collCandidates.push({ t: rt, solid: s, side: "r" });
+            //         }
+
+            //         // same for all 4 sides
+            //         // down
+            //         const dt = antilerp(this.ball.py, this.ball.y, s.hbox.y1);
+            //         const dx = lerp(this.ball.px, this.ball.x, dt);
+            //         if (dt >= 0 && dt <= 1 && dx >= s.hbox.x1 && dx <= s.hbox.x2) {
+            //             collCandidates.push({ t: dt, solid: s, side: "d" });
+            //         }
+
+            //         // left
+            //         const lt = antilerp(this.ball.px, this.ball.x, s.hbox.x2);
+            //         const ly = lerp(this.ball.py, this.ball.y, rt);
+            //         if (lt >= 0 && lt <= 1 && ly >= s.hbox.y1 && ly <= s.hbox.y2) {
+            //             collCandidates.push({ t: lt, solid: s, side: "l" });
+            //         }
+
+            //         // up
+            //         const ut = antilerp(this.ball.py, this.ball.y, s.hbox.y2);
+            //         const ux = lerp(this.ball.ux, this.ball.x, ut);
+            //         if (ut >= 0 && ut <= 1 && ux >= s.hbox.x1 && ux <= s.hbox.x2) {
+            //             collCandidates.push({ t: ut, solid: s, side: "u" });
+            //         }
+            //         window.console.log(this.ball, s, collCandidates);
+            //         // add to collisions the first of the four
+            //         collisions.push(collCandidates.reduce((min, current) => {
+            //             if (!min || min.t > current.t) {
+            //                 return current;
+            //             } else {
+            //                 return min;
+            //             }
+            //         }));
+            //     }
+
+            //     // sort collisions by earliest to latest
+            //     collisions.sort((a, b) => a.t - b.t);
+
+            //     for (const coll in collisions) {
+            //         if (this.hbox.collide(coll.solid.hbox)) {
+            //             switch (coll.side) {
+            //                 case "r": this.x = coll.solid.x - this.w; break;
+            //                 case "d": this.y = coll.solid.y - this.h; break;
+            //                 case "l": this.x = coll.solid.x + coll.solid.w; window.console.log(coll); break;
+            //                 case "u": this.y = coll.solid.y + coll.solid.h; break;
+            //             }
+            //             this.transport();
+            //         }
+            //     }*/
+
+            //     this.ball = null;
+            // }
+
             if (events.Mouse && !eventsPrev.Mouse && !this.ball) {
                 this.dragging = true;
                 this.dragInitX = events.MouseX;
@@ -463,105 +568,22 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             } else if (!events.Mouse && this.dragging) {
                 this.dragging = false;
                 const tsz = this.engine.renderer.camera.tsz;
-                
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
-                
-                //limit
-                const maxDrag = this.maxDrag;
+                const maxDrag = 80;
                 const len = Math.sqrt(dx * dx + dy * dy);
-                if (len > maxDrag) {
-                    dx = dx / len * maxDrag;
-                    dy = dy / len * maxDrag;
-                }
-
+                if (len > maxDrag) { dx = dx / len * maxDrag; dy = dy / len * maxDrag; }
                 this.ball = new MBall(this,
                     dx / tsz * MPlayer.throwFactor,
                     dy / tsz * MPlayer.throwFactor,
                 );
-            } else if ((events.Mouse && this.ball) || this.ball?.dead) {
-                const epsilon = this.engine.epsilon;
-                if (this.ball.xv > 0) {
-                    this.x = this.ball.hbox.x2 - this.w - epsilon;
-                } else {
-                    this.x = this.ball.hbox.x1 + epsilon;
-                }
-                if (this.ball.yv > 0) {
-                    this.y = this.ball.hbox.y2 - this.h - epsilon;
-                } else {
-                    this.y = this.ball.hbox.y1 + epsilon;
-                }
+            } else if (events.Mouse && !eventsPrev.Mouse && this.ball) {
+                //teleport to ball, inherit its momentum
+                this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
+                this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
+                this.xv = this.ball.xv;
+                this.yv = this.ball.yv;
                 this.transport();
-
-                // TODO: add stuck logic in case the ball is falling downward but there's a block above!!!!
-
-                /*
-                const solidsTouched = this.touchingAll(MSolid, this.engine.world);
-                const collisions = [];
-                
-                // this is a mechanic originating from xyzyyxx's platformer engine
-                // adapted to this situation
-                for (const s of solidsTouched) {
-                    // this is an array for the four directions the ball could've
-                    // collided with the solid
-                    const collCandidates = [];
-
-                    // logic: rt gets the time at which it was collided
-                    // ry gets the ball's y position at the time, to verify if it's
-                    // legit and not off the segment
-                    const rt = antilerp(this.ball.px, this.ball.x, s.hbox.x1);
-                    const ry = lerp(this.ball.py, this.ball.y, rt);
-                    if (rt >= 0 && rt <= 1 && ry >= s.hbox.y1 && ry <= s.hbox.y2) {
-                        collCandidates.push({ t: rt, solid: s, side: "r" });
-                    }
-
-                    // same for all 4 sides
-                    // down
-                    const dt = antilerp(this.ball.py, this.ball.y, s.hbox.y1);
-                    const dx = lerp(this.ball.px, this.ball.x, dt);
-                    if (dt >= 0 && dt <= 1 && dx >= s.hbox.x1 && dx <= s.hbox.x2) {
-                        collCandidates.push({ t: dt, solid: s, side: "d" });
-                    }
-
-                    // left
-                    const lt = antilerp(this.ball.px, this.ball.x, s.hbox.x2);
-                    const ly = lerp(this.ball.py, this.ball.y, rt);
-                    if (lt >= 0 && lt <= 1 && ly >= s.hbox.y1 && ly <= s.hbox.y2) {
-                        collCandidates.push({ t: lt, solid: s, side: "l" });
-                    }
-
-                    // up
-                    const ut = antilerp(this.ball.py, this.ball.y, s.hbox.y2);
-                    const ux = lerp(this.ball.ux, this.ball.x, ut);
-                    if (ut >= 0 && ut <= 1 && ux >= s.hbox.x1 && ux <= s.hbox.x2) {
-                        collCandidates.push({ t: ut, solid: s, side: "u" });
-                    }
-                    window.console.log(this.ball, s, collCandidates);
-                    // add to collisions the first of the four
-                    collisions.push(collCandidates.reduce((min, current) => {
-                        if (!min || min.t > current.t) {
-                            return current;
-                        } else {
-                            return min;
-                        }
-                    }));
-                }
-
-                // sort collisions by earliest to latest
-                collisions.sort((a, b) => a.t - b.t);
-
-                for (const coll in collisions) {
-                    if (this.hbox.collide(coll.solid.hbox)) {
-                        switch (coll.side) {
-                            case "r": this.x = coll.solid.x - this.w; break;
-                            case "d": this.y = coll.solid.y - this.h; break;
-                            case "l": this.x = coll.solid.x + coll.solid.w; window.console.log(coll); break;
-                            case "u": this.y = coll.solid.y + coll.solid.h; break;
-                        }
-                        this.transport();
-                    }
-                }*/
-
                 this.ball = null;
             }
 
