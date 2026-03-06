@@ -37,11 +37,11 @@ const roomTemplates = {
             ], 'pakala'),
             'K': (x, y) => new MNPC(x, y - 0.6, [
                 "hiiiii",   
-                "My name is classified",
+                "My name is Vicioustrex :P",
                 ".",
                 "..",
                 "...",
-                "You don't know me son",
+                "You don't know me son *gasp*",
             ], 'kili'),
             'S': (x, y) => new MNPC(x, y - 0.5, [
                 "hiiiii",   
@@ -72,7 +72,7 @@ const roomTemplates = {
         "         ##        #",
         "                   #",
         "                   #",
-        "                   #",
+        "   c           d   #",
         "########     #######",
     ],
 
