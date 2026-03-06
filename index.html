@@ -179,7 +179,10 @@
 
         engine.createPlayer(5, 5, 0.97, 1.4, (t, player) => { 
             const state = player.state ?? 'idle';
-            const frames = gfx.player[state] ?? gfx.player.idle;
+            const carryMap = { idle: 'carryidle', run: 'carryrun', jump: 'carryjump', fall: 'carryfall' };
+            const holding = player.ball && (player.engine.slowMo || player.dragging || player.carrying);
+            const spriteState = holding && carryMap[state] ? carryMap[state] : state;
+            const frames = gfx.player[spriteState] ?? gfx.player.idle;
             const fps = ANIM_FPS[state] ?? 6;
             const count = Object.keys(frames).length;
             let frame;

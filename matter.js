@@ -432,6 +432,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.prevKeyS = false;
             this.prevMouse = false;
             this.dragging = false;
+            this.carrying = false;
             this.dragInitX = 0;
             this.dragInitY = 0;
             this.dragX = 0;
@@ -553,12 +554,14 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this._groundedOnEnemy = false;
 
             this._separateFromEnemies();
-            this.ball?.tick?.(dt, {}, { friction: 1 });
+
+            //enemies hit when the player carrying basically a convulated way of accomplishing that
+            if (!this.carrying) this.ball?.tick?.(dt, {}, { friction: 1 });
 
             //during slowmo keep ball glued to player center so they fall together
             if (this.ball && this.engine.slowMo) {
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
-                this.ball.y = this.y + this.h / 2 - this.ball.h / 2;
+                this.ball.x = (this.x + this.w / 2 - this.ball.w / 2) + 0.1;
+                this.ball.y = this.y - 0.55;
                 this.ball.room = this.room;
                 this.ball.updateHitbox();
             }
@@ -577,25 +580,38 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                 this.dragY = events.MouseY;
 
             } else if (!events.Mouse && this.dragging) {
-                //release an' throw ball, exit any existing slowmo
                 this.dragging = false;
                 this.engine.slowMo = false;
-                //discard if one existed during slowmo...
-                this.ball = null;
                 const tsz = this.engine.renderer.camera.tsz;
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
                 const maxDrag = 120;
+                const minDrag = 18;
                 const len = Math.sqrt(dx * dx + dy * dy);
-                if (len > maxDrag) { 
-                    dx = dx / len * maxDrag; 
-                    dy = dy / len * maxDrag; 
+                if (len < minDrag) {
+                    //too small a drag
+                    this.carrying = true;
+                } else {
+                    //real throw
+                    this.carrying = false;
+                    this.ball = null;
+                    if (len > maxDrag) {
+                        dx = dx / len * maxDrag;
+                        dy = dy / len * maxDrag;
+                    }
+                    this.ball = new MBall(this,
+                        dx / tsz * MPlayer.throwFactor,
+                        dy / tsz * MPlayer.throwFactor,
+                    );
                 }
-                this.ball = new MBall(this,
-                    dx / tsz * MPlayer.throwFactor,
-                    dy / tsz * MPlayer.throwFactor,
-                );
 
+            } else if (events.Mouse && !this.prevMouse && this.ball && this.carrying) {
+                this.carrying = false;
+                this.dragging = true;
+                this.dragInitX = events.MouseX;
+                this.dragInitY = events.MouseY;
+                this.dragX = events.MouseX;
+                this.dragY = events.MouseY;
             } else if (events.Mouse && !this.prevMouse && this.ball) {
                 //click while ball is out so holding and dragging right away works for quick chaining
                 this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
@@ -640,12 +656,29 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             if (this.engine.slowMo) {
                 if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
                     this.engine.slowMo = false;
-                    this.ball = null;
+                    this.carrying = true;
                 }
                 if (this.grounded && !this._wasGrounded) {
                     this.engine.slowMo = false;
                     this.ball = null;
+                    this.carrying = false;
                 }
+            }
+
+            //recall ball to player on any keypress while it's in free flight
+            if (this.ball && !this.carrying && !this.engine.slowMo && !this.dragging) {
+                if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+                    this.carrying = true;
+                }
+            }
+
+            if (this.ball && this.carrying) {
+                this.ball.xv = 0;
+                this.ball.yv = 0;
+                this.ball.x = (this.x + this.w / 2 - this.ball.w / 2) + 0.05;
+                this.ball.y = this.y - 0.55;
+                this.ball.room = this.room;
+                this.ball.updateHitbox();
             }
 
             if (events.KeyA) this.facing = -1;
@@ -691,10 +724,13 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             if (this.ball?.room == this.room)
                 this.ball?.render?.(ctx, camera, t, pixel);
             if (this.dragging) {
-                const { x, y } = camera.worldToScreen(
-                    this.x + this.w / 2,
-                    this.y + this.h / 2
-                );
+                const ballCx = this.ball
+                    ? this.ball.x + this.ball.w / 2
+                    : this.x + this.w / 2;
+                const ballCy = this.ball
+                    ? this.ball.y + this.ball.h / 2
+                    : this.y + this.h / 2;
+                const { x, y } = camera.worldToScreen(ballCx, ballCy);
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
                 const maxDrag = this.maxDrag;
