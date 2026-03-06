@@ -219,6 +219,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             super(x, y, w, h, texturer);
             this.sx = x;
             this.sy = y;
+            this.sroom = null;
             this.w = w;
             this.h = h;
             this.xv = 0;
@@ -315,6 +316,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             if (this.touching(MHazard, world)) {
                 this.x = this.sx;
                 this.y = this.sy;
+                this.room = this.sroom;
                 this.health = this.maxHealth;
                 this.transport();
             }
@@ -1223,7 +1225,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
                     const factory = entityMap[ch];
                     if (!factory) continue;
                     const entity = factory(c, r, ch);
-                    if (entity) this.add(room, entity, 0);
+                    if (entity) this.addEntity(room, entity);
                 }
             }
         }
@@ -1231,7 +1233,10 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
         addEntity(room, entity) {
             room.entities.push(entity);
             entity.engine = this.engine;
-            entity.room = room;
+            if (!entity.room) {
+                entity.room = room;
+                entity.sroom = room;
+            }
         }
 
         transportEntity(entity) {
@@ -1267,14 +1272,11 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             
             //move enemy between rooms yes
             if (entity.room !== oldRoom) {
-                for (const z of oldRoom.indices) {
-                    const arr = oldRoom.zia[z];
-                    const idx = arr.indexOf(entity);
-                    if (idx !== -1) {
-                        arr.splice(idx, 1);
-                        this.add(entity.room, entity, z);
-                        break;
-                    }
+                const arr = oldRoom.entities;
+                const idx = arr.indexOf(entity);
+                if (idx !== -1) {
+                    arr.splice(idx, 1);
+                    this.addEntity(entity.room, entity);
                 }
 
                 if (entity === this.engine?.player && !entity._roomChangedThisFrame) {
@@ -1550,7 +1552,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             // Everything layer 0 and below is behind the player
             // Everything layer 1 and above is above the player
             // TODO: make this not hacky
-            this.world.add(this.world.rooms[0][0], this.player, 1);
+            this.world.addEntity(this.world.rooms[0][0], this.player);
         }
 
         /** Set render configs
@@ -1583,6 +1585,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             if (this.player.health <= 0) {
                 this.player.x = this.player.sx;
                 this.player.y = this.player.sy;
+                this.player.room = this.player.sroom;
                 this.player.xv = 0;
                 this.player.yv = 0;
                 this.player.health = this.player.maxHealth;
@@ -1655,6 +1658,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             //reposition the player's respawn point to the base of this totem
             player.sx = this.x + 1 - player.w / 2;
             player.sy = this.y + 4  - player.h;
+            player.sroom = this.room;
         }
     }
 
