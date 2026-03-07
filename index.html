@@ -81,14 +81,17 @@
             }
 
             capture(sourceCanvas) {
-                this.snap.width = sourceCanvas.width;
-                this.snap.height = sourceCanvas.height;
+                this.snap.width = sourceCanvas.effectiveWidth;
+                this.snap.height = sourceCanvas.effectiveHeight;
+                // lol we just bein too lazy to save the context
+                this.snap.getContext('2d').scale(1 / dprVal, 1 / dprVal);
                 this.snap.getContext('2d').drawImage(sourceCanvas, 0, 0);
             }
 
             captureNew(sourceCanvas) {
-                this.snapNew.width = sourceCanvas.width;
-                this.snapNew.height = sourceCanvas.height;
+                this.snapNew.width = sourceCanvas.effectiveWidth;
+                this.snapNew.height = sourceCanvas.effectiveHeight;
+                this.snapNew.getContext('2d').scale(1 / dprVal, 1 / dprVal);
                 this.snapNew.getContext('2d').drawImage(sourceCanvas, 0, 0);
                 this.newCaptured = true;
             }
@@ -358,6 +361,7 @@
                     roomTransition.drawNewRoom(ctx);
                     roomTransition.drawOldRoom(ctx);
                     ctx.restore();
+                    engine.tick(t, dt, events);
                     roomTransition.tick(dt);
                 } else {
                     ctx.save();
