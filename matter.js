@@ -1,4 +1,16 @@
-const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckpoint, MNPC, MBlob } = (() => {
+const { 
+    MDecorative, 
+    MSolid, 
+    MHazard, 
+    MEntity, 
+    MPlayer, 
+    MEnemy, 
+    MEngine, 
+    MCheckpoint, 
+    MNPC, 
+    MBlob, 
+    MBreakWall
+ } = (() => {
     /** MBox: an AABB hitbox implementation.
      * 
      */
@@ -22,7 +34,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          * @param {number} y 
          * @param {number} w 
          * @param {number} h 
-         * @returns {void}
+         * @returns {void}  
          */
         static fromWH(x, y, w, h) {
             return new MBox(x, y, x + w, y + h);
@@ -139,7 +151,7 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
          */
         constructor(x, y, w, h, texturer) {
             super(MBox.fromWH(x, y, w, h), texturer);
-            this.hbox = this.dbox;
+            this.hbox = new MBox(x, y, x + 1, y + 3);
             this.x = x;
             this.y = y;
             this.w = w;
@@ -363,8 +375,19 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
             this.transport();
             const xt = this.touching(MSolid, world);
             if (xt) {
-                this.x = this.xv > 0 ? xt.hbox.x1 - this.w - epsilon : xt.hbox.x2 + epsilon;
-                this.xv *= -MBall.bounce;
+                if (xt instanceof MBreakWall && !xt._breaking && !this._hitCooldowns.has(xt)) {
+                    if (xt.onBallHit(this)) {
+                        //correct side so da ball punches through, an the wall starts crumbling
+                        this._hitCooldowns.set(xt, MBreakWall.BREAK_DURATION + 0.1);
+                    } else {
+                        //wrong side.
+                        this.x = this.xv > 0 ? xt.hbox.x1 - this.w - epsilon : xt.hbox.x2 + epsilon;
+                        this.xv *= -MBall.bounce;
+                    }
+                } else if (!(xt instanceof MBreakWall && xt._breaking)) {
+                    this.x = this.xv > 0 ? xt.hbox.x1 - this.w - epsilon : xt.hbox.x2 + epsilon;
+                    this.xv *= -MBall.bounce;
+                }
             }
 
             this.yv += gravity * dt;
@@ -2048,5 +2071,82 @@ const { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckp
         }
     }
 
-    return { MDecorative, MSolid, MHazard, MEntity, MPlayer, MEnemy, MEngine, MCheckpoint, MNPC, MBlob };
+    class MBreakWall extends MSolid {
+        static BREAK_DURATION = 0.4;
+
+        /**
+         * @param {number} x
+         * @param {number} y
+         * @param {'brickBreakWall'|'grassyBreakWall'|'mushroomBreakWall'} variant
+         * @param {'left'|'right'} breakSide  - which face the ball must strike
+         */
+        constructor(x, y, variant = 'brickBreakWall', breakSide = 'right') {
+            super(x, y, 2, 3, (t, self) => {
+                if (self._breaking) {
+                    const frames = gfx.props.misc.breakWallHit;
+                    const fi = Math.min(
+                        frames.length - 1,
+                        Math.floor((self._breakTimer / MBreakWall.BREAK_DURATION) * frames.length)
+                    );
+                    return frames[fi];
+                }
+                return gfx.props.misc[variant];
+            });
+            this.variant = variant;
+            this.breakSide = breakSide;
+            this._breaking = false;
+            this._breakTimer = 0;
+        }
+
+        /** Called by MBall. Returns true when the wall actually breaks.
+         * @param {MBall} ball
+         * @returns {boolean}
+         */
+        onBallHit(ball) {
+            if (this._breaking) return false;
+
+            const ballCx= ball.x + ball.w / 2;
+            const wallCx = this.x + this.w / 2;
+            const fromRight = ballCx >= wallCx && ball.xv <= 0;
+            const fromLeft = ballCx <= wallCx && ball.xv >= 0;
+
+            const valid = (this.breakSide === 'right' && fromRight) || (this.breakSide === 'left'  && fromLeft);
+            if (!valid) return false;
+
+            this._breaking = true;
+            this._breakTimer = 0;
+            return true;
+        }
+
+        render(ctx, camera, t, pixel) {
+            if (!camera.inView(this)) return;
+            const { x, y } = camera.worldToScreen(this.x, this.y);
+            this.texturer(t, this).draw(ctx, x, y, pixel);
+        }
+
+        tick(dt) {
+            if (!this._breaking) return;
+            this._breakTimer += dt;
+            if (this._breakTimer >= MBreakWall.BREAK_DURATION) {
+                const room = this.room;
+                if (!room) return;
+                const i = room.entities.indexOf(this);
+                if (i !== -1) room.entities.splice(i, 1);
+            }
+        }
+    }
+
+    return { 
+        MDecorative, 
+        MSolid, 
+        MHazard, 
+        MEntity, 
+        MPlayer, 
+        MEnemy, 
+        MEngine, 
+        MCheckpoint, 
+        MNPC, 
+        MBlob, 
+        MBreakWall
+    };
 })();
