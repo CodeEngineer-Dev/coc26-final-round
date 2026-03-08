@@ -10,12 +10,11 @@ class GameObject {
 
     this.id = GameObject.idCounter++;
     this.components = new Map();
+    this.inSystems = new Set();
 
     for (let component of components) {
       this.addComponent(component);
     }
-
-    this.isRemoved = false;
   }
 
   addComponent(componentInstance) {
@@ -39,8 +38,14 @@ class GameObject {
     return this.components.has(componentClass);
   }
 
-  removeSelf() {
-    this.isRemoved = true;
+  isInSystem(systemInstance) {
+    return this.inSystems.has(systemInstance);
+  }
+  addSystem(systemInstance) {
+    this.inSystems.add(systemInstance);
+  }
+  removeSystem(systemInstance) {
+    this.inSystems.delete(systemInstance);
   }
 }
 
@@ -119,9 +124,14 @@ class DynamicBody extends PhysicsBody {
   }
 }
 
-class Sprite {}
-
-class AnimatedSprite {}
+class Camera extends Component {
+  constructor(options = {}) {
+    super();
+    this.label = options.label || "main";
+    this.scale = options.scale || 20;
+    this.viewport = options.viewport || { x: 0, y: 0, w: 1, h: 1 };
+  }
+}
 
 // Systems
 
@@ -134,38 +144,42 @@ class System {
     }
 
     this.requiredComponentsArray = requiredComponentsArray;
+    this.gameObjects = new Set();
   }
-  applyTo(gameObject, ...args) {}
-  remove(gameObject, ...args) {}
 
-  preUpdate(...args) {}
-  postUpdate(...args) {}
-
-  apply(...args) {
-    this.preUpdate(...args);
-
+  init(gameObject, ...args) {
+    this.gameObjects.add(gameObject);
+    gameObject.addSystem(this);
+    this.onInit(gameObject, ...args);
+  }
+  delete(gameObject, ...args) {
+    this.onDelete(gameObject, ...args);
+    this.gameObjects.delete(gameObject);
+  }
+  run(...args) {
     for (let gameObject of gameObjects) {
-      if (gameObject.isRemoved) {
-        this.remove(gameObject, ...args);
-        continue;
-      }
+      if (!gameObject.isInSystem(this)) {
+        let isMissingComponent = false;
 
-      let isMissingComponent = false;
-
-      for (let requiredComponentClass of this.requiredComponentsArray) {
-        if (!gameObject.hasComponent(requiredComponentClass)) {
-          isMissingComponent = true;
-          break;
+        for (let requiredComponentClass of this.requiredComponentsArray) {
+          if (!gameObject.hasComponent(requiredComponentClass)) {
+            isMissingComponent = true;
+            break;
+          }
         }
-      }
 
-      if (!isMissingComponent) {
-        this.applyTo(gameObject, ...args);
+        if (!isMissingComponent) {
+          this.init(gameObject, ...args);
+        }
       }
     }
 
-    this.postUpdate(...args);
+    this.onRun(...args);
   }
+
+  onInit(gameObject, ...args) {}
+  onRun(...args) {}
+  onDelete(gameObject, ...args) {}
 }
 
 class PhysicsSystem extends System {
@@ -174,7 +188,7 @@ class PhysicsSystem extends System {
     this.engine = Matter.Engine.create(options);
   }
 
-  applyTo(gameObject) {
+  onInit(gameObject) {
     let physicsComponent = gameObject.getComponent(PhysicsBody);
     let transformComponent = gameObject.getComponent(Transform);
     let shapeComponent = gameObject.getComponent(Shape);
@@ -220,12 +234,8 @@ class PhysicsSystem extends System {
       // Set the component reference
       physicsComponent.matterBodyReference = physicsBody;
     }
-
-    transformComponent.prevX = transformComponent.x;
-    transformComponent.prevY = transformComponent.y;
-    transformComponent.prevTheta = transformComponent.theta;
   }
-  remove(gameObject) {
+  onDelete(gameObject) {
     let physicsComponent = gameObject.getComponent(PhysicsBody);
 
     Matter.Composite.remove(
@@ -233,12 +243,19 @@ class PhysicsSystem extends System {
       physicsComponent.matterBodyReference,
     );
   }
-  postUpdate(...args) {
-    let deltaTime = args[0] || (1 / 120) * 1000;
+  onRun(...args) {
+    for (let gameObject of this.gameObjects) {
+      let transformComponent = gameObject.getComponent(Transform);
 
+      transformComponent.prevX = transformComponent.x;
+      transformComponent.prevY = transformComponent.y;
+      transformComponent.prevTheta = transformComponent.theta;
+    }
+
+    let deltaTime = args[0] || (1 / 120) * 1000;
     Matter.Engine.update(this.engine, deltaTime);
 
-    for (let gameObject of gameObjects) {
+    for (let gameObject of this.gameObjects) {
       let transformComponent = gameObject.getComponent(Transform);
       let physicsComponent = gameObject.getComponent(PhysicsBody);
 
@@ -261,52 +278,83 @@ class DebugRenderSystem extends System {
       );
       this.canvas = document.getElementById("debugRender");
     }
+
     this.ctx = this.canvas.getContext("2d");
   }
-  preUpdate() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+  worldToScreen(x, y) {
+    return {
+      x: (x - this.focusX) * this.tsz + this.w / 2,
+      y: (y - this.focusY) * this.tsz + this.h / 2,
+    };
   }
 
-  applyTo(gameObject, ...args) {
-    let lerpFactor = args[0];
+  screenToWorld(x, y) {
+    return {
+      x: (x - this.w / 2) / this.tsz + this.focusX,
+      y: (y - this.w / 2) / this.tsz + this.focusY,
+    };
+  }
 
-    let transformComponent = gameObject.getComponent(Transform);
-    let shapeComponent = gameObject.getComponent(Shape);
+  onRun(...args) {
+    let cameraTransform =
+      gameObjects
+        .find(
+          (gameObject) =>
+            gameObject.hasComponent(Camera) &&
+            gameObject.getComponent(Camera).label == "main",
+        )
+        .getComponent(Camera) || new Transform(0, 0, 0);
 
-    let x = lerp(transformComponent.prevX, transformComponent.x, lerpFactor);
-    let y = lerp(transformComponent.prevY, transformComponent.y, lerpFactor);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.save();
 
-    this.ctx.strokeStyle = "red";
+    this.ctx.translate(0, 0);
 
-    if (shapeComponent instanceof Rectangle) {
-      this.ctx.strokeRect(
-        x - shapeComponent.w / 2,
-        y - shapeComponent.h / 2,
-        shapeComponent.w,
-        shapeComponent.h,
-      );
-    } else if (shapeComponent instanceof Circle) {
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, shapeComponent.r, 0, Math.PI * 2);
-      this.ctx.closePath();
-      this.ctx.stroke();
-    } else if (shapeComponent instanceof Polygon) {
-      this.ctx.translate(x, y);
-      this.ctx.beginPath();
+    //this.ctx.translate(cameraTransform.x, cameraTransform.y);
 
-      this.ctx.moveTo(
-        shapeComponent.vertices[0].x,
-        shapeComponent.vertices[0].y,
-      );
+    for (let gameObject of this.gameObjects) {
+      let lerpFactor = args[0];
 
-      for (let vertice of shapeComponent.vertices) {
-        this.ctx.lineTo(vertice.x, vertice.y);
+      let transformComponent = gameObject.getComponent(Transform);
+      let shapeComponent = gameObject.getComponent(Shape);
+
+      let x = lerp(transformComponent.prevX, transformComponent.x, lerpFactor);
+      let y = lerp(transformComponent.prevY, transformComponent.y, lerpFactor);
+
+      this.ctx.strokeStyle = "red";
+
+      if (shapeComponent instanceof Rectangle) {
+        this.ctx.strokeRect(
+          x - shapeComponent.w / 2,
+          y - shapeComponent.h / 2,
+          shapeComponent.w,
+          shapeComponent.h,
+        );
+      } else if (shapeComponent instanceof Circle) {
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, shapeComponent.r, 0, Math.PI * 2);
+        this.ctx.closePath();
+        this.ctx.stroke();
+      } else if (shapeComponent instanceof Polygon) {
+        this.ctx.translate(x, y);
+        this.ctx.beginPath();
+
+        this.ctx.moveTo(
+          shapeComponent.vertices[0].x,
+          shapeComponent.vertices[0].y,
+        );
+
+        for (let vertice of shapeComponent.vertices) {
+          this.ctx.lineTo(vertice.x, vertice.y);
+        }
+
+        this.ctx.closePath();
+        this.ctx.stroke();
       }
-
-      this.ctx.closePath();
-      this.ctx.stroke();
-      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
+
+    this.ctx.restore();
   }
 }
 
@@ -337,16 +385,18 @@ restitution
 */
 
 let player = new GameObject(
-  new Transform(20, 0, 0),
+  new Transform(0, -200, 0),
   new Circle(1),
   new DynamicBody(),
 );
 
 let floor = new GameObject(
-  new Transform(20, 300, 0),
-  new Rectangle(10, 10),
+  new Transform(600, 600, 0),
+  new Circle(10),
   new StaticBody(),
 );
+
+let camera = new GameObject(new Transform(0, 0, 0), new Camera());
 
 let physicsSystem = new PhysicsSystem();
 let debugRenderSystem = new DebugRenderSystem("game");
@@ -373,12 +423,12 @@ function gameLoop() {
   accumulator += currentTime - prevTime;
 
   while (accumulator > fixedTimeStep) {
-    physicsSystem.apply(fixedTimeStep);
+    physicsSystem.run(fixedTimeStep);
     accumulator -= fixedTimeStep;
   }
 
   let lerpFactor = accumulator / fixedTimeStep;
-  debugRenderSystem.apply(lerpFactor);
+  debugRenderSystem.run(lerpFactor);
 
   prevTime = currentTime;
 
