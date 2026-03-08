@@ -3705,7 +3705,7 @@ var gfxData = {
 			],
 		},
 		
-		minitaur: {
+		minotaur: {
 			idle: [
 				[
 					'-----------------',
