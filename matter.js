@@ -2723,7 +2723,7 @@ const {
          */
         render(ctx, camera, t, pixel) {
             super.render(ctx, camera, t, pixel);
-            if (this.ball?.room == this.room)
+            if (this.ball?.room == this.room) 
                 this.ball?.render?.(ctx, camera, t, pixel);
         }
 
@@ -2733,7 +2733,7 @@ const {
          * @returns {void}
          */ 
         tick(dt) {
-            super.tick(dt);
+            //super.tick(dt);
             if (this.thrown) {
                 //real throw
                 //this.carrying = false;
