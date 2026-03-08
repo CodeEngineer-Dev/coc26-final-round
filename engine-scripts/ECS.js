@@ -128,7 +128,7 @@ class Camera extends Component {
   constructor(options = {}) {
     super();
     this.label = options.label || "main";
-    this.scale = options.scale || 20;
+    this.zoom = options.zoom || 1;
     this.viewport = options.viewport || { x: 0, y: 0, w: 1, h: 1 };
   }
 }
@@ -282,36 +282,27 @@ class DebugRenderSystem extends System {
     this.ctx = this.canvas.getContext("2d");
   }
 
-  worldToScreen(x, y) {
-    return {
-      x: (x - this.focusX) * this.tsz + this.w / 2,
-      y: (y - this.focusY) * this.tsz + this.h / 2,
-    };
-  }
-
-  screenToWorld(x, y) {
-    return {
-      x: (x - this.w / 2) / this.tsz + this.focusX,
-      y: (y - this.w / 2) / this.tsz + this.focusY,
-    };
-  }
-
   onRun(...args) {
+    let cameraObject = gameObjects.find(
+      (gameObject) =>
+        gameObject.hasComponent(Camera) &&
+        gameObject.getComponent(Camera).label == "main",
+    );
+
     let cameraTransform =
-      gameObjects
-        .find(
-          (gameObject) =>
-            gameObject.hasComponent(Camera) &&
-            gameObject.getComponent(Camera).label == "main",
-        )
-        .getComponent(Camera) || new Transform(0, 0, 0);
+      cameraObject.getComponent(Transform) || new Transform(0, 0, 0);
+    let cameraComponent = cameraObject.getComponent(Camera) || new Camera();
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     this.ctx.save();
+    this.ctx.translate(
+      this.canvas.clientWidth / 2,
+      this.canvas.clientHeight / 2,
+    );
+    this.ctx.scale(cameraComponent.zoom, cameraComponent.zoom);
 
-    this.ctx.translate(0, 0);
-
-    //this.ctx.translate(cameraTransform.x, cameraTransform.y);
+    this.ctx.translate(-cameraTransform.x, -cameraTransform.y);
 
     for (let gameObject of this.gameObjects) {
       let lerpFactor = args[0];
@@ -319,25 +310,35 @@ class DebugRenderSystem extends System {
       let transformComponent = gameObject.getComponent(Transform);
       let shapeComponent = gameObject.getComponent(Shape);
 
-      let x = lerp(transformComponent.prevX, transformComponent.x, lerpFactor);
-      let y = lerp(transformComponent.prevY, transformComponent.y, lerpFactor);
+      let worldX = lerp(
+        transformComponent.prevX,
+        transformComponent.x,
+        lerpFactor,
+      );
+      let worldY = lerp(
+        transformComponent.prevY,
+        transformComponent.y,
+        lerpFactor,
+      );
 
       this.ctx.strokeStyle = "red";
+      this.ctx.lineWidth = 1 / cameraComponent.zoom;
 
       if (shapeComponent instanceof Rectangle) {
         this.ctx.strokeRect(
-          x - shapeComponent.w / 2,
-          y - shapeComponent.h / 2,
+          worldX - shapeComponent.w / 2,
+          worldY - shapeComponent.h / 2,
           shapeComponent.w,
           shapeComponent.h,
         );
       } else if (shapeComponent instanceof Circle) {
         this.ctx.beginPath();
-        this.ctx.arc(x, y, shapeComponent.r, 0, Math.PI * 2);
+        this.ctx.arc(worldX, worldY, shapeComponent.r, 0, Math.PI * 2);
         this.ctx.closePath();
         this.ctx.stroke();
       } else if (shapeComponent instanceof Polygon) {
-        this.ctx.translate(x, y);
+        this.ctx.save();
+        this.ctx.translate(worldX, worldY);
         this.ctx.beginPath();
 
         this.ctx.moveTo(
@@ -351,6 +352,7 @@ class DebugRenderSystem extends System {
 
         this.ctx.closePath();
         this.ctx.stroke();
+        this.ctx.restore();
       }
     }
 
@@ -366,7 +368,7 @@ Components include:
 - Transform DONE
 - Shapes DONE
 - Physics bodies IN PROGRESS
-- Camera
+- Camera BASIC DONE
 - Sprite
 - AnimatedSprite
 - Audio
@@ -384,19 +386,20 @@ restitution
 
 */
 
+let floor = new GameObject(
+  new Transform(0, 0, 0),
+  new Rectangle(36, 36),
+  new StaticBody({ restitution: 1 }),
+);
+
 let player = new GameObject(
   new Transform(0, -200, 0),
-  new Circle(1),
-  new DynamicBody(),
+  new Rectangle(36, 60),
+  new DynamicBody({ restitution: 1 }),
+  new Camera(),
 );
 
-let floor = new GameObject(
-  new Transform(600, 600, 0),
-  new Circle(10),
-  new StaticBody(),
-);
-
-let camera = new GameObject(new Transform(0, 0, 0), new Camera());
+//let camera = new GameObject(new Transform(0, 0, 0), new Camera());
 
 let physicsSystem = new PhysicsSystem();
 let debugRenderSystem = new DebugRenderSystem("game");
@@ -420,7 +423,10 @@ Game loop order is always:
 function gameLoop() {
   let currentTime = performance.now();
 
-  accumulator += currentTime - prevTime;
+  let deltaTime = Math.min(currentTime - prevTime, 250);
+
+  prevTime = currentTime;
+  accumulator += deltaTime;
 
   while (accumulator > fixedTimeStep) {
     physicsSystem.run(fixedTimeStep);
@@ -429,8 +435,6 @@ function gameLoop() {
 
   let lerpFactor = accumulator / fixedTimeStep;
   debugRenderSystem.run(lerpFactor);
-
-  prevTime = currentTime;
 
   requestAnimationFrame(gameLoop);
 }

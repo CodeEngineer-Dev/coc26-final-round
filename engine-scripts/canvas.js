@@ -1,11 +1,11 @@
-//collect and delete animation frames that have already occured 
-for(var i = window.requestAnimationFrame(function() {}); i > 0; i--) {
-    window.cancelAnimationFrame(i);
+//collect and delete animation frames that have already occured
+for (var i = window.requestAnimationFrame(function () {}); i > 0; i--) {
+  window.cancelAnimationFrame(i);
 }
 
 //load HTML canvas
 const canvas = document.getElementById("game");
-const ctx = canvas.getContext('2d'); 
+const ctx = canvas.getContext("2d");
 
 //width and height are changeable
 let width = canvas.width;
@@ -15,7 +15,7 @@ const BASE_WIDTH = 600;
 const BASE_HEIGHT = 600;
 
 //world to CSS pixel scale
-let displayScale = 1; 
+let displayScale = 1;
 
 //device pixel ratio
 let dprVal = window.devicePixelRatio || 1;
@@ -29,57 +29,56 @@ let dprVal = window.devicePixelRatio || 1;
  * @returns {void}
  */
 function resizeCanvasAndScale() {
-    /* 
+  /* 
         @Judges - This function is used to scale the canvas up to a specified dimension.
         Making it based on the height of the page only allows me to set it at a perfecct 1:1 aspect ratio.
         The reason this is so fast is because it scales it up with window.devicePixelRation
         and uses the built in canvas functions for transformations (setTransform) 
     */
-    const cssW = window.innerWidth;
-    const cssH = window.innerHeight;
-    dprVal = window.devicePixelRatio || 1;
+  const cssW = window.innerWidth;
+  const cssH = window.innerHeight;
+  dprVal = window.devicePixelRatio || 1;
 
-    //calculate the size that maintains aspect ratio
-    const aspectRatio = BASE_WIDTH / BASE_HEIGHT;
-    let canvasDisplayWidth, canvasDisplayHeight;
-    
-    if (cssW / cssH > aspectRatio) {
-        canvasDisplayHeight = cssH;
-        canvasDisplayWidth = cssH * aspectRatio;
-    } 
-    else {
-        //window is taller than canvas aspect ratio
-        canvasDisplayWidth = cssW;
-        canvasDisplayHeight = cssW / aspectRatio;
-    }
+  //calculate the size that maintains aspect ratio
+  const aspectRatio = BASE_WIDTH / BASE_HEIGHT;
+  let canvasDisplayWidth, canvasDisplayHeight;
 
-    //update wrapper size and position
-    const wrapper = document.getElementById('game-wrapper');
-    if (wrapper) {
-        wrapper.style.width = canvasDisplayWidth + 'px';
-        wrapper.style.height = canvasDisplayHeight + 'px';
-    }
+  if (cssW / cssH > aspectRatio) {
+    canvasDisplayHeight = cssH;
+    canvasDisplayWidth = cssH * aspectRatio;
+  } else {
+    //window is taller than canvas aspect ratio
+    canvasDisplayWidth = cssW;
+    canvasDisplayHeight = cssW / aspectRatio;
+  }
 
-    canvas.style.width = canvasDisplayWidth + "px";
-    canvas.style.height = canvasDisplayHeight + "px";
-    canvas.width = Math.round(canvasDisplayWidth * dprVal);
-    canvas.height = Math.round(canvasDisplayHeight * dprVal);
-    // tracking variables
-    canvas.effectiveWidth = canvasDisplayWidth;
-    canvas.effectiveHeight = canvasDisplayHeight;
+  //update wrapper size and position
+  const wrapper = document.getElementById("game-wrapper");
+  if (wrapper) {
+    wrapper.style.width = canvasDisplayWidth + "px";
+    wrapper.style.height = canvasDisplayHeight + "px";
+  }
 
-    //update display scale
-    width = canvas.width;
-    height = canvas.height;
+  canvas.style.width = canvasDisplayWidth + "px";
+  canvas.style.height = canvasDisplayHeight + "px";
+  canvas.width = Math.round(canvasDisplayWidth * dprVal);
+  canvas.height = Math.round(canvasDisplayHeight * dprVal);
+  // tracking variables
+  canvas.effectiveWidth = canvasDisplayWidth;
+  canvas.effectiveHeight = canvasDisplayHeight;
 
-    ctx.scale(dprVal, dprVal);
-    ctx.imageSmoothingEnabled = false;
-    ctx.webkitImageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
-    ctx.msImageSmoothingEnabled = false;
-    ctx.oImageSmoothingEnabled = false;
-    
-    window.scene = "game";
+  //update display scale
+  width = canvas.width;
+  height = canvas.height;
+
+  ctx.setTransform(dprVal, 0, 0, dprVal, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.webkitImageSmoothingEnabled = false;
+  ctx.mozImageSmoothingEnabled = false;
+  ctx.msImageSmoothingEnabled = false;
+  ctx.oImageSmoothingEnabled = false;
+
+  window.scene = "game";
 }
 window.addEventListener("resize", resizeCanvasAndScale);
 resizeCanvasAndScale();
