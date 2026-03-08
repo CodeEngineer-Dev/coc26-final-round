@@ -10,7 +10,8 @@ const {
     MNPC, 
     MBlob, 
     MBreakWall,
-    MMinitaur
+    MMinotaur,
+    MMimic
  } = (() => {
     /** MBox: an AABB hitbox implementation.
      * 
@@ -438,6 +439,8 @@ const {
      */
     class MPlayer extends MEntity {
         static throwFactor = 10;
+        static maxDrag = 120;
+        static minDrag = 18;
 
         /** Constructs an instance of MPlayer.
          * 
@@ -611,8 +614,6 @@ const {
                 const tsz = this.engine.renderer.camera.tsz;
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
-                const maxDrag = 120;
-                const minDrag = 18;
                 const len = Math.sqrt(dx * dx + dy * dy);
                 if (len < minDrag) {
                     //too small a drag
@@ -622,8 +623,8 @@ const {
                     this.carrying = false;
                     this.ball = null;
                     if (len > maxDrag) {
-                        dx = dx / len * maxDrag;
-                        dy = dy / len * maxDrag;
+                        dx = dx / len * this.constructor.maxDrag;
+                        dy = dy / len * this.constructor.maxDrag;
                     }
                     this.ball = new MBall(this,
                         dx / tsz * MPlayer.throwFactor,
@@ -1988,7 +1989,7 @@ const {
             const big = variant.endsWith('2');
             const w = big ? 0.88 : 0.60;
             const h = big ? 0.77 : 0.55;
-             const hp = big ? 90: 30;
+            const hp = big ? 90: 30;
 
             super(x, y, w, h, hp, (t, self) => {
                 const fps= self.state === 'jump' ? 10 : 4;
@@ -2017,7 +2018,7 @@ const {
 
             //aggro range junk
             if (!this.chaseMode && dist <= this.aggroRange) {
-                this.chaseMode  = true;
+                this.chaseMode = true;
                 this.aggroLatch = 1.0;
             }
             if (this.chaseMode) {
@@ -2062,9 +2063,9 @@ const {
             if (this.grounded && Math.abs(this.xv) < 0.15) {
                 this.stallTimer += dt;
                 if (this.stallTimer > 0.25) {
-                    this.patrolDir  *= -1;
+                    this.patrolDir *= -1;
                     this.stallTimer  = 0;
-                    this.stateTime   = 0;
+                    this.stateTime  = 0;
                 }
             }
             else {
@@ -2157,7 +2158,7 @@ const {
                 owner.x + (owner.facing === 1 ? owner.w : -w),
                 owner.y + owner.h * 0.2,
                 w, h, 1,
-                () => gfx.enemies.minitaur.spear
+                () => gfx.enemies.minotaur.spear
             );
 
             this.engine = owner.engine;
@@ -2175,7 +2176,7 @@ const {
 
         render(ctx, camera, t, pixel) {
             if (this.dead || !camera.inView(this)) return;
-            const sprite = gfx.enemies.minitaur.spear;
+            const sprite = gfx.enemies.minotaur.spear;
             const sw = sprite.w * pixel;
             const sh = sprite.h * pixel;
             //rotate around the hitbox center
@@ -2276,7 +2277,7 @@ const {
             this.owner?.onSpearStuck?.(this);
             this._updateTipHitbox();
         }
-        //minitaur (that is hard to spell honeyghost) is never notified twice
+        //minotaur (that is hard to spell honeyghost) is never notified twice
         _notifyOwner() {
             if (this._ownerNotified) return;
             this._ownerNotified = true;
@@ -2291,8 +2292,8 @@ const {
         }
     }
 
-    /** MMinitaur: spear-throwing enemy. Patrols, aggros on sight, winds up and throws <3 */
-    class MMinitaur extends MEnemy {
+    /** MMinotaur: spear-throwing enemy. Patrols, aggros on sight, winds up and throws <3 */
+    class MMinotaur extends MEnemy {
         static THROW_RANGE= 14;
         static THROW_WINDUP= 0.55;
         static THROW_COOLDOWN= 2.8;
@@ -2306,11 +2307,11 @@ const {
 
         constructor(x, y) {
             super(x, y, 1.0, 1.4, 60, (t, self) => {
-                const frames = gfx.enemies.minitaur[self.state]
-                            ?? gfx.enemies.minitaur.idle;
+                const frames = gfx.enemies.minotaur[self.state]
+                            ?? gfx.enemies.minotaur.idle;
                 //single SpriteRef
                 if (!Array.isArray(frames)) return frames;
-                const fps = MMinitaur.ANIM_FPS[self.state] ?? 4;
+                const fps = MMinotaur.ANIM_FPS[self.state] ?? 4;
                 return frames[Math.floor(t * fps) % frames.length];
             });
 
@@ -2331,7 +2332,7 @@ const {
         /** Called by MSpear once it has either stuck or hit the player. */
         onSpearDone() {
             this._spearActive = false;
-            this._throwCooldown = MMinitaur.THROW_COOLDOWN;
+            this._throwCooldown = MMinotaur.THROW_COOLDOWN;
         }
 
         _launchSpear() {
@@ -2341,7 +2342,7 @@ const {
             const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
             const dy = (player.y + player.h / 2) - (this.y + this.h / 2);
             const len = Math.sqrt(dx * dx + dy * dy) || 1;
-            const spd = MMinitaur.THROW_SPEED;
+            const spd = MMinotaur.THROW_SPEED;
 
             const spear = new MSpear(
                 this,
@@ -2362,7 +2363,7 @@ const {
             this._spearActive = false;
             this._retrieving = false;
             this._spear = null;
-            this._throwCooldown = MMinitaur.THROW_COOLDOWN;
+            this._throwCooldown = MMinotaur.THROW_COOLDOWN;
         }
 
         _hasLOS() {
@@ -2373,7 +2374,7 @@ const {
             const tileMap = this.engine?.world?.tileMap;
             if (!bitmap || !tileMap) return false;
 
-            //ray from minitaur center to player center
+            //ray from minotaur center to player center
             let x = Math.round(this.x + this.w / 2);
             let y = Math.round(this.y + this.h / 2);
             const x1 = Math.round(player.x + player.w / 2);
@@ -2429,7 +2430,7 @@ const {
                 this._windupTimer += dt;
                 this.facing = this._playerHDir() || this.facing;
                 this.state = 'idle';
-                if (this._windupTimer >= MMinitaur.THROW_WINDUP) {
+                if (this._windupTimer >= MMinotaur.THROW_WINDUP) {
                     this._throwing = false;
                     this._windupTimer = 0;
                     this._launchSpear();
@@ -2443,7 +2444,7 @@ const {
                 && !this._spearActive
                 && this._throwCooldown <= 0
                 && this.grounded
-                && dist <= MMinitaur.THROW_RANGE) {
+                && dist <= MMinotaur.THROW_RANGE) {
                 this._throwing = true;
                 this._windupTimer = 0;
                 return;
@@ -2492,7 +2493,7 @@ const {
 
             // hovering spear
             if (!this._spearActive && !this._throwing && !this._retrieving) {
-                const spearSprite = gfx.enemies.minitaur.spear;
+                const spearSprite = gfx.enemies.minotaur.spear;
                 const { x: sx, y: sy } = camera.worldToScreen(
                     this.x + this.w / 2 + this.facing * 0.9,
                     this.y + this.h * 0.4
@@ -2508,6 +2509,340 @@ const {
             }
         }   
     }
+
+    /** MMimic: enemy mimicking player, can throw spike balls à la MPlayer. */
+    class MMimic extends MEnemy {
+        static meleeRange = 5;
+        static aggroRange = 14;
+        static aimTime = 0.5;
+        static maxDrag = MPlayer.maxDrag;
+        static minDrag = MPlayer.minDrag;
+
+        constructor(x, y) {
+            const sprites = gfx.enemies.mimic;
+
+            super(x, y, 0.97, 1.4, 100, (t, self) => {
+                const state = self.state ?? 'idle';
+                const carryMap = { idle: 'carryidle', run: 'carryrun', jump: 'carryjump', fall: 'carryfall' };
+                const holding = self.ball && (self.engine.slowMo || self.dragging || self.carrying);
+                const spriteState = holding && carryMap[state] ? carryMap[state] : state;
+                const frames = sprites[spriteState] ?? sprites.idle;
+                const fps = ANIM_FPS[state] ?? 6;
+                const count = Object.keys(frames).length;
+                let frame;
+
+                //if you prefer chaining if else statements you need help
+                switch (state) {
+                    case 'jump':
+                    case 'fall': {
+                        frame = Math.min(count - 1, Math.floor((self.airTime ?? 0) * fps));
+                        break;
+                    }
+                    case 'groundpound': {
+                        frame = 0;
+                        break;
+                    }
+                    case 'groundpoundimpact': {
+                        //play impact frames forward once then hold last
+                        frame = Math.min(count - 1, Math.floor((self.impactTime ?? 0) * fps));
+                        break;
+                    }
+                    case 'throw': {
+                        const dx = self.dragX - self.dragInitX;
+                        const dy = self.dragY - self.dragInitY;
+                        const len = Math.sqrt(dx * dx + dy * dy);
+                        frame = Math.floor(Math.min(len / self.maxDrag, 1) * (count - 1));
+                        break;
+                    }
+                    default: {
+                        frame = Math.floor(t * fps) % count;
+                    }
+                }
+                
+                //just in case yk?
+                frame = Math.max(0, Math.min(count - 1, frame));
+                return frames[frame];
+            });
+
+            this.sprites = sprites;/*
+            this.patrolDir = 1;
+            this.jumpCooldown = 1 + Math.random() * 1.5;
+            this.stallTimer = 0;
+
+            //AI crap
+            this.aggroRange = big ? 8 : 6;
+            this.deAggroRange = big ? 12 : 9;
+            this.chaseMode = false;  
+            this.aggroLatch = 0;*/
+            
+            //speed can be adjusted
+            this.moveSpeed = 8;
+
+            this.ball = null;
+            this._ballTimer = 0;
+            this.thrown = false;
+            this.throwxv = 0;
+            this.throwyv = 0;
+            this.throwing = false;
+        } 
+
+        ai(dt) {
+            const dist = this._playerDist();
+            if (dist <= this.constructor.meleeRange && !this.throwing) {
+                this._runChase(dt);
+            } else if (dist <= this.constructor.aggroRange || this.throwing) {
+                this._ballChase(dt);
+            } else if (!this.throwing) {
+                this._runPatrol(dt);
+            }
+        }
+
+        _runChase(dt) {
+            this._ballTimer = 0;
+            this.moveSpeed = this.engine.hvel * 4 / 5;
+
+            //use the graph to navigate
+            this._updatePath(dt, 0.5);
+
+            if (this._path?.length) {
+                this._followPath(dt);
+            } else {
+                //graph went bleh
+                const hDir = this._playerHDir();
+                if (hDir === 1) this._moveRight = true;
+                if (hDir === -1) this._moveLeft  = true;
+                this.facing = hDir || this.facing;
+            }
+        }
+
+        _ballChase(dt) {
+            if (!this.throwing) {
+                this._ballTimer += dt;
+                if (this._ballTimer >= this.constructor.aimTime) {
+                    // this uses a parabolic simulator and minimizing using calculus
+                    // to aim for the player
+                    // really complicated algebra and calculus was put into figuring this out
+                    // this was a pain in th— -xyzyyxx
+                    // also this was checked by chatgpt
+                    // x(t) = xv * t + x0
+                    // y(t) = 1/2 g t^2 + yv * t + y0
+                    // constraint:
+                    // exists t such that simultaneously:
+                    // px = xv * t + x0
+                    // py = 1/2 g t^2 + yv * t + y0
+                    // => t = (px - x0) / xv
+                    // => py = 1/2 g ((px - x0) / xv)^2 + yv * ((px - x0) / xv) + y0
+                    // simplifications: px - x0 = Δx, py - y0 = Δy
+                    // => Δy = 1/2 g Δx^2 / xv^2 + yv * Δx / xv
+                    // minimize xv^2 + yv^2 along that curve
+                    // find yv first, then plug it in, and minimize along xv
+                    // => (Δy - 1/2 g Δx^2 / xv^2) xv / Δx = yv
+                    // => (Δy xv - 1/2 g Δx^2 / xv) / Δx = yv
+                    // => xv^2 + yv^2 = xv^2 + (Δy xv - 1/2 g Δx^2 / xv)^2 / Δx^2
+                    // = xv^2 + (Δy^2 xv^2 - 2 Δy xv (1/2 g Δx^2 / xv) + 1/4 g^2 Δx^4 / xv^2) / Δx^2
+                    // = xv^2 + (Δy^2 xv^2 - Δy g Δx^2 + 1/4 g^2 Δx^4 / xv^2) / Δx^2
+                    // = xv^2 + xv^2 Δy^2 / Δx^2 - Δy g + 1/4 g^2 Δx^2 / xv^2
+                    // minimize xv^2 + xv^2 Δy^2 / Δx^2 - Δy g + 1/4 g^2 Δx^2 / xv^2
+                    // => d(xv^2 + xv^2 Δy^2 / Δx^2 - Δy g + 1/4 g^2 Δx^2 / xv^2)/dxv = 0
+                    // => 2xv + 2xv Δy^2 / Δx^2 - 0 - 1/2 g^2 Δx^2 / xv^3 = 0
+                    // => 2xv + 2xv Δy^2 / Δx^2 = 1/2 g^2 Δx^2 / xv^3
+                    // => 2xv^4 + 2xv^4 Δy^2 / Δx^2 = 1/2 g^2 Δx^2
+                    // => xv^4 (1 + Δy^2 / Δx^2) = 1/4 g^2 Δx^2
+                    // => xv^4 = 1/4 g^2 Δx^2 / (1 + Δy^2 / Δx^2)
+                    // => xv^4 = 1/4 g^2 Δx^4 / (Δx^2 + Δy^2)
+                    // => xv = Δx (1/4 g^2 / (Δx^2 + Δy^2))^(1/4)
+
+                    const p = this.engine.player;
+                    const g = this.engine.gravity;
+                    const delx = p.x - this.x;
+                    const dely = p.y - this.y;
+                    const xv = delx * Math.pow(1 / 4 * g * g / (delx * delx + dely * dely), 1 / 4);
+                    const yv = (dely * xv - 1 / 2 * g * delx * delx / xv) / delx;
+                    const maxDrag = this.constructor.maxDrag;
+                    if (xv * xv + yv * yv > maxDrag * maxDrag) {
+                        const factor = maxDrag / Math.sqrt(xv * xv + yv * yv);
+                        xv *= factor;
+                        yv *= factor;
+                    }
+                    if (Math.sign(xv / delx) == -1) {
+                        xv *= -1;
+                        yv *= -1;
+                    }
+                    this.throwxv = xv;
+                    this.throwyv = yv;
+                    this.thrown = true;
+                    this._ballTimer = 0;
+                }
+            }
+        }
+
+        /** Patrol: walk back and forth, jump periodically. */
+        _runPatrol(dt) {
+            this._ballTimer = 0;
+            if (this.patrolDir === 1) this._moveRight = true;
+            else this._moveLeft  = true;
+            this.facing = this.patrolDir;
+
+            if (this.grounded && Math.abs(this.xv) < 0.15) {
+                this.stallTimer += dt;
+                if (this.stallTimer > 0.25) {
+                    this.patrolDir *= -1;
+                    this.stallTimer = 0;
+                    this.stateTime = 0;
+                }
+            } else {
+                this.stallTimer = 0;
+            }
+
+            this.jumpCooldown -= dt;
+            if (this.grounded && this.jumpCooldown <= 0) {
+                this._jumpQueued = true;
+                this.jumpCooldown = 1.5 + Math.random() * 2;
+            }
+        }
+
+        /** Renders the thing
+         * 
+         * @param {CanvasRenderingContext2D} ctx 
+         * @param {MCamera} camera 
+         * @param {number} t
+         * @param {number} pixel
+         * @returns {void}
+         */
+        render(ctx, camera, t, pixel) {
+            super.render(ctx, camera, t, pixel);
+            if (this.ball?.room == this.room)
+                this.ball?.render?.(ctx, camera, t, pixel);
+        }
+
+        /** Tick the game forward
+         * 
+         * @param {number} dt 
+         * @returns {void}
+         */ 
+        tick(dt) {
+            super.tick(dt);
+            if (this.thrown) {
+                //real throw
+                //this.carrying = false;
+                //this.ball = null;
+                this.ball = new MBall(this,
+                    this.throwxv,
+                    this.throwyv
+                );
+                this.thrown = false;
+                this.throwing = true;
+            }
+            this.ball?.tick?.(dt);
+            /* else if (events.Mouse && !this.prevMouse && this.ball && this.carrying) {
+                this.carrying = false;
+                this.dragging = true;
+                this.dragInitX = events.MouseX;
+                this.dragInitY = events.MouseY;
+                this.dragX = events.MouseX;
+                this.dragY = events.MouseY;
+            } else if (events.Mouse && !this.prevMouse && this.ball) {
+                //click while ball is out so holding and dragging right away works for quick chaining
+                this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
+                this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
+                this.xv = this.ball.xv;
+                this.yv = this.ball.yv;
+                this.room = this.ball.room;
+                this.transport();
+                this.engine.slowMo = true;
+                //ball stays alive
+                this.dragging = true;
+                this.dragInitX = events.MouseX;
+                this.dragInitY = events.MouseY;
+                this.dragX = events.MouseX;
+                this.dragY = events.MouseY;
+
+                //push player out of any wall they landed in
+                const world = this.engine.world;
+                this.updateHitbox();
+                if (this.touching(MSolid, world)) {
+                    //try nudging in the direction the ball was travelling
+                    const nudges = [
+                        [Math.sign(this.xv) * (this.w + this.engine.epsilon), 0],
+                        [0, Math.sign(this.yv) * (this.h + this.engine.epsilon)],
+                        [-Math.sign(this.xv) * (this.w + this.engine.epsilon), 0],
+                        [0, -Math.sign(this.yv) * (this.h + this.engine.epsilon)],
+                    ];
+                    for (const [nx, ny] of nudges) {
+                        this.x += nx;
+                        this.y += ny;
+                        this.updateHitbox();
+                        if (!this.touching(MSolid, world)) break;
+                        this.x -= nx;
+                        this.y -= ny;
+                        this.updateHitbox();
+                    }
+                }
+                this.transport();
+            }
+
+            //exit slowmo on keypress or on landing also pretty important
+            if (this.engine.slowMo) {
+                if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+                    this.engine.slowMo = false;
+                    this.carrying = true;
+                }
+                if (this.grounded && !this._wasGrounded) {
+                    this.engine.slowMo = false;
+                    this.ball = null;
+                    this.carrying = false;
+                }
+            }
+
+            //recall ball to player on any keypress while it's in free flight
+            if (this.ball && !this.carrying && !this.engine.slowMo && !this.dragging) {
+                if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+                    this.carrying = true;
+                }
+            }
+
+            if (this.ball && this.carrying) {
+                this.ball.xv = 0;
+                this.ball.yv = 0;
+                this.ball.x = (this.x + this.w / 2 - this.ball.w / 2) + 0.05;
+                this.ball.y = this.y - 0.55;
+                this.ball.room = this.room;
+                this.ball.updateHitbox();
+            }*/
+
+            if (events.KeyA) this.facing = -1;
+            if (events.KeyD) this.facing = 1;/*
+
+            if (this.groundPounding && this.grounded) {
+                this.groundPounding = false;
+                this.impactTime = 0;
+                this.engine.onGroundPound?.();
+            }
+
+            const impactDuration = 0.4;
+            if (this.impactTime !== null && this.impactTime > impactDuration) {
+                this.impactTime = null;
+            }
+
+            if (this.groundPounding) {
+                this.state = 'groundpound';
+            } else if (this.impactTime !== null) {
+                this.state = 'groundpoundimpact';
+            } else if (this.dragging && !this.carrying && !this.ball) {
+                this.state = 'throw';
+            } else if (!this.grounded) {
+                this.airTime = (this.airTime ?? 0) + dt;
+                this.state = this.yv < 0 ? 'jump' : 'fall';
+            } else {
+                this.airTime = 0;
+                this.state = Math.abs(this.xv) > 0.5 ? 'run' : 'idle';
+            }
+
+            this._wasGrounded = this.grounded;
+            this.prevMouse = events.Mouse;*/
+        }
+    }
+
     return { 
         MDecorative, 
         MSolid, 
@@ -2520,6 +2855,7 @@ const {
         MNPC, 
         MBlob, 
         MBreakWall,
-        MMinitaur
+        MMinotaur,
+        MMimic
     };
 })();
