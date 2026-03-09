@@ -249,6 +249,7 @@ const {
          */
         updateHitbox() {
             this.hbox.setWH(this.x, this.y, this.w, this.h);
+            this.dbox.setWH(this.x, this.y, this.w, this.h);
         }
 
         /** Transport entity to a different room if it enters one
