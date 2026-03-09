@@ -27,7 +27,7 @@
             </div>
         </div>
     </body>
-    <script type src="utils.js"></script>   
+    <script type src="utils.js"></script>    
     <script type src="canvas.js"></script>
     <script type src="cgraphics.js"></script>
     <script type src="console.js"></script>
@@ -184,6 +184,8 @@
 
         engine.world.init(roomTemplates, worldAssembly, tileMap);
 
+        
+
         engine.createPlayer(5, 5, 0.97, 1.4, (t, player) => { 
             const state = player.state ?? 'idle';
             const carryMap = { idle: 'carryidle', run: 'carryrun', jump: 'carryjump', fall: 'carryfall' };
@@ -227,7 +229,31 @@
             return frames[frame];
         });
         
-        
+        //P stands for player lol
+        outer:
+        for (let ri = 0; ri < engine.world.rooms.length; ri++) {
+            for (let ci = 0; ci < engine.world.rooms[ri].length; ci++) {
+                const room = engine.world.rooms[ri][ci];
+                const key = worldAssembly[ri]?.[ci];
+                const roomDef = roomTemplates[key];
+                const bitmap = Array.isArray(roomDef) ? roomDef : roomDef?.bitmap;
+                if (!bitmap) continue;
+                for (let r = 0; r < bitmap.length; r++) {
+                    for (let c = 0; c < bitmap[r].length; c++) {
+                        if (bitmap[r][c] === 'P') {
+                            engine.player.x  = c;
+                            engine.player.y  = r;
+                            engine.player.sx = c;
+                            engine.player.sy = r;
+                            engine.player.room  = room;
+                            engine.player.sroom = room;
+                            engine.player.updateHitbox();
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
 
         //const builder = new WorldBuilder(engine, 1, tileMap);
         //const world = new WorldManager(engine, roomTemplates, worldAssembly, builder);
