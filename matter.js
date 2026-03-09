@@ -467,7 +467,8 @@ const {
             this.dragInitY = 0;
             this.dragX = 0;
             this.dragY = 0;
-            this.ball = null;
+            this.ball = null; //new MBall(this, 0, 0);
+            this.carrying = true;
 
             this.maxDrag = 120;
         }
@@ -603,12 +604,12 @@ const {
                 this.dragInitY = events.MouseY;
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
-
+                this.ball = new MBall(this, 0, 0);
+                this.carrying = true;
             } else if (events.Mouse && this.dragging) {
                 //update drag
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
-
             } else if (!events.Mouse && this.dragging) {
                 this.dragging = false;
                 this.engine.slowMo = false;
@@ -616,13 +617,12 @@ const {
                 let dx = this.dragX - this.dragInitX;
                 let dy = this.dragY - this.dragInitY;
                 const len = Math.sqrt(dx * dx + dy * dy);
+                this.carrying = false;
                 if (len < this.constructor.minDrag) {
                     //too small a drag
-                    this.carrying = true;
+                    this.ball = null;
                 } else {
                     //real throw
-                    this.carrying = false;
-                    this.ball = null;
                     if (len > this.constructor.maxDrag) {
                         dx = dx / len * this.constructor.maxDrag;
                         dy = dy / len * this.constructor.maxDrag;
@@ -633,14 +633,14 @@ const {
                     );
                 }
 
-            } else if (events.Mouse && !this.prevMouse && this.ball && this.carrying) {
-                this.carrying = false;
+            } /*else if (events.Mouse && !this.prevMouse && this.ball && this.carrying) {
+                //this.carrying = false;
                 this.dragging = true;
                 this.dragInitX = events.MouseX;
                 this.dragInitY = events.MouseY;
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
-            } else if (events.Mouse && !this.prevMouse && this.ball) {
+            } */else if (events.Mouse && !this.prevMouse && this.ball) {
                 //click while ball is out so holding and dragging right away works for quick chaining
                 this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
                 this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
@@ -684,19 +684,16 @@ const {
             if (this.engine.slowMo) {
                 if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
                     this.engine.slowMo = false;
-                    this.carrying = true;
                 }
                 if (this.grounded && !this._wasGrounded) {
                     this.engine.slowMo = false;
-                    this.ball = null;
-                    this.carrying = false;
                 }
             }
 
-            //recall ball to player on any keypress while it's in free flight
+            //remove ball on any keypress while it's in free flight
             if (this.ball && !this.carrying && !this.engine.slowMo && !this.dragging) {
                 if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
-                    this.carrying = true;
+                    this.ball = null;
                 }
             }
 
