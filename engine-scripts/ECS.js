@@ -138,13 +138,40 @@ class Sprite extends Component {}
 class UserInput extends Component {
   constructor(...inputsToWatch) {
     super();
-    this.inputsToWatch = inputsToWatch;
+    this.inputsToWatch = new Set(inputsToWatch);
   }
 }
 
 class StateHandler extends Component {
-  constructor(stateMachine) {
+  constructor(stateMachine, onStateChange, onSignal) {
+    super();
     this.stateMachine = stateMachine;
+    this.gameObject = null;
+
+    this.stateMachine.setSignalCallback(this.signalReceived);
+    this.stateMachine.setStateCallback(this.stateChanged);
+
+    this.onStateChange = onStateChange;
+    this.onSignal = onSignal;
+  }
+  stateChanged(state, data) {
+    this.onStateChange(this.gameObject, state, data);
+  }
+  signalReceived(signal, data) {
+    this.onSignal(this.gameObject, signal, data);
+  }
+}
+
+class Signal extends Component {
+  constructor() {
+    super();
+    this.signals = [];
+  }
+  addSignal(name, type, data) {
+    this.signals.push({ name, type, data });
+  }
+  consumeSignal() {
+    return this.signals.shift();
   }
 }
 
@@ -195,6 +222,70 @@ class System {
   onInit(gameObject, ...args) {}
   onRun(...args) {}
   onDelete(gameObject, ...args) {}
+}
+
+class UserInputSystem extends System {
+  constructor(inputMap) {
+    super([UserInput, Signal]);
+    this.keyDown = new Set();
+    this.keyUp = new Set();
+
+    this.inputMap = inputMap;
+
+    window.addEventListener("keydown", (e) => {
+      this.keyDown.add(e.code);
+    });
+    window.addEventListener("keyup", (e) => {
+      this.keyUp.add(e.code);
+    });
+  }
+  onRun() {
+    for (let gameObject of this.gameObjects) {
+      let inputComponent = gameObject.getComponent(UserInput);
+      let signalComponent = gameObject.getComponent(Signal);
+
+      for (let key of this.keyDown) {
+        let input = this.inputMap[key];
+        if (inputComponent.inputsToWatch.has(input)) {
+          input += "_PRESSED";
+          signalComponent.addSignal(input, "input", {});
+        }
+      }
+      for (let key of this.keyUp) {
+        let input = this.inputMap[key];
+        if (inputComponent.inputsToWatch.has(input)) {
+          input += "_RELEASED";
+          signalComponent.addSignal(input, "input", {});
+        }
+      }
+
+      this.keyDown.clear();
+      this.keyUp.clear();
+    }
+  }
+}
+
+class GameLogicSystem extends System {
+  constructor() {
+    super([Signal, StateHandler]);
+  }
+  onInit(gameObject) {
+    let stateHandlerComponent = gameObject.getComponent(StateHandler);
+    stateHandlerComponent.gameObject = gameObject;
+  }
+  onRun() {
+    for (let gameObject of gameObjects) {
+      let stateHandlerComponent = gameObject.getComponent(StateHandler);
+      let signalComponent = gameObject.getComponent(Signal);
+      console.log(gameObject);
+
+      while (signalComponent.signals.length > 0) {
+        stateHandlerComponent.stateMachine.sendEvent(
+          signalComponent.consumeSignal(),
+        );
+      }
+    }
+  }
 }
 
 class PhysicsSystem extends System {

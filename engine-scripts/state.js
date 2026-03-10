@@ -1,16 +1,37 @@
 class State {
-  constructor(name) {
+  constructor(
+    name,
+    eventToState,
+    onEnter = () => {},
+    onExit = () => {},
+    onUpdate = () => {},
+  ) {
     this.name = name;
+    this.signal = () => {};
+    this.eventsToStates = new Map(Object.entries(eventToState));
+    this.onEnter = onEnter;
+    this.onExit = onExit;
+    this.onUpdate = onUpdate;
   }
 
-  enter() {}
-  update() {}
-  exit() {}
+  enter() {
+    this.onEnter(this.signal);
+  }
+  update() {
+    this.onUpdate(this.signal);
+  }
+  exit() {
+    this.onExit(this.signal);
+  }
 
-  handleEvent(event, data) {}
+  handleEvent(event, data = {}) {
+    if (this.eventsToStates.has(event)) {
+      return this.eventsToStates.get(event);
+    }
+    return null;
+  }
 }
 
-// make a state machine
 class IdleState extends State {
   constructor() {
     super();
@@ -85,12 +106,12 @@ class StateMachine {
 
     this.stateCallback = () => {};
 
-    this.events = new Set();
+    this.events = [];
   }
 
   setSignalCallback(signalCallback) {
     for (let stateInstance of this.states) {
-      stateInstance.signal(signalCallback);
+      stateInstance.signal = signalCallback;
     }
   }
 
@@ -103,7 +124,7 @@ class StateMachine {
   }
 
   handleEvents() {
-    let newStateName = this.currentState.handleEvent(this.eventQueue.shift());
+    let newStateName = this.currentState.handleEvent(this.events.shift());
     if (newStateName) {
       this.currentState.exit();
       this.currentState = this.states.get(newStateName);
@@ -111,7 +132,9 @@ class StateMachine {
     }
   }
 
-  update() {}
+  update() {
+    this.currentState.update();
+  }
 
   run() {
     this.update();
@@ -122,22 +145,3 @@ class StateMachine {
     return this.currentState.name;
   }
 }
-
-let playerState = new StateMachine(
-  [new IdleState(), new WalkState(), new JumpState(), new FallState()],
-  "idle",
-);
-console.log(playerState);
-
-console.log(playerState.getCurrentStateName());
-
-playerState.sendEvent("jump_PRESSED");
-
-playerState.handleEvents();
-console.log(playerState.getCurrentStateName());
-
-playerState.sendEvent("jump_RELEASED");
-
-playerState.handleEvents();
-
-console.log(playerState.getCurrentStateName());
