@@ -148,8 +148,12 @@ class StateHandler extends Component {
     this.stateMachine = stateMachine;
     this.gameObject = null;
 
-    this.stateMachine.setSignalCallback(this.signalReceived);
-    this.stateMachine.setStateCallback(this.stateChanged);
+    this.stateMachine.setSignalCallback((signal, data) => {
+      this.signalReceived(this.gameObject, signal, data);
+    });
+    this.stateMachine.setStateCallback((state, data) => {
+      this.signalReceived(this.gameObject, state, data);
+    });
 
     this.onStateChange = onStateChange;
     this.onSignal = onSignal;
@@ -274,10 +278,9 @@ class GameLogicSystem extends System {
     stateHandlerComponent.gameObject = gameObject;
   }
   onRun() {
-    for (let gameObject of gameObjects) {
+    for (let gameObject of this.gameObjects) {
       let stateHandlerComponent = gameObject.getComponent(StateHandler);
       let signalComponent = gameObject.getComponent(Signal);
-      console.log(gameObject);
 
       while (signalComponent.signals.length > 0) {
         stateHandlerComponent.stateMachine.sendEvent(

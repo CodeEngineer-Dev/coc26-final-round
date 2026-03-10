@@ -32,68 +32,6 @@ class State {
   }
 }
 
-class IdleState extends State {
-  constructor() {
-    super();
-    this.name = "idle";
-  }
-
-  handleEvent(event) {
-    if (event == "moveLeft_PRESSED" || event == "moveRight_PRESSED") {
-      return "walk";
-    } else if (event == "jump_PRESSED") {
-      return "jump";
-    }
-    return null;
-  }
-}
-
-class WalkState extends State {
-  constructor() {
-    super();
-    this.name = "walk";
-  }
-
-  handleEvent(event) {
-    if (event == "jump_PRESSED") {
-      return "jump";
-    }
-    if (event == "moveLeft_RELEASED" || "moveRight_RELEASED") {
-      return "idle";
-    }
-    return null;
-  }
-}
-
-class JumpState extends State {
-  constructor() {
-    super();
-    this.name = "jump";
-  }
-
-  handleEvent(event) {
-    if (event == "jump_RELEASED" || event == "yVelocityZero_PHYSICS") {
-      return "fall";
-    }
-    return null;
-  }
-}
-
-class FallState extends State {
-  constructor() {
-    super();
-    this.name = "fall";
-  }
-  enter() {
-    // send signal to cancel y velocity
-  }
-  handleEvent(event) {
-    if (event == "groundCollide") {
-      return "idle";
-    }
-  }
-}
-
 class StateMachine {
   constructor(allStates, startingStateName) {
     this.states = new Map();
@@ -110,7 +48,7 @@ class StateMachine {
   }
 
   setSignalCallback(signalCallback) {
-    for (let stateInstance of this.states) {
+    for (let [, stateInstance] of this.states) {
       stateInstance.signal = signalCallback;
     }
   }
