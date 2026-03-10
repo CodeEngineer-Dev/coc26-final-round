@@ -11,7 +11,8 @@ const {
     MBlob, 
     MBreakWall,
     MMinotaur,
-    MMimic
+    MMimic,
+    MPowerPillar
  } = (() => {
     /** MBox: an AABB hitbox implementation.
      * 
@@ -353,6 +354,7 @@ const {
             this.engine = player.engine;
             this.room = player.room;
             this.angle = 0;
+            this.onGround = false;
             this._hitCooldowns = new Map();
         }
 
@@ -393,13 +395,19 @@ const {
                 }
             }
 
+            this.onGround = false;
             this.yv += gravity * dt;
             this.y += this.yv * dt;
             this.transport();
             const yt = this.touching(MSolid, world);
             if (yt) {
-                this.y = this.yv > 0 ? yt.hbox.y1 - this.h - epsilon : yt.hbox.y2 + epsilon;
+                const falling = this.yv > 0;
+                this.y = falling ? yt.hbox.y1 - this.h - epsilon : yt.hbox.y2 + epsilon;
                 this.yv *= -MBall.bounce;
+                if (falling) {
+                    this.onGround = true;
+                    if (Math.abs(this.yv) < 0.8) this.yv = 0;
+                }
             }
 
             //tick down per-enemy hit cooldowns
@@ -471,6 +479,12 @@ const {
             this.carrying = true;
 
             this.maxDrag = 120;
+            this.powers = {
+                ball: false,
+                groundedTeleport: false,
+                groundPound: false,
+                fullTeleport: false,
+            };
         }
 
 
@@ -558,7 +572,8 @@ const {
          * @returns {void}
          */ 
         tick(dt, events) {
-            const canGroundPound = !this.grounded && !this.groundPounding && (this.airTime ?? 0) > 0.1;
+            //const canGroundPound = !this.grounded && !this.groundPounding && (this.airTime ?? 0) > 0.1;
+            const canGroundPound = this.powers.groundPound && !this.grounded && !this.groundPounding && (this.airTime ?? 0) > 0.1;
             const keySJustPressed = events.KeyS && !this.prevKeyS;
 
             if (canGroundPound && keySJustPressed) {
@@ -589,7 +604,8 @@ const {
             //enemies hit when the player carrying basically a convulated way of accomplishing that
             if (!this.carrying) this.ball?.tick?.(dt, {}, { friction: 1 });
 
-            if (events.Mouse && !this.prevMouse && !this.ball) {
+            //if (events.Mouse && !this.prevMouse && !this.ball) {
+            if (events.Mouse && !this.prevMouse && !this.ball && this.powers.ball) {
                 //start drag
                 this.dragging = true;
                 this.dragInitX = events.MouseX;
@@ -625,6 +641,10 @@ const {
                     );
                 }
             } else if (events.Mouse && !this.prevMouse && this.ball) {
+                const canTeleport = this.powers.fullTeleport ||
+                       (this.powers.groundedTeleport && this.ball.onGround);
+                if (canTeleport) {
+                
                 //click while ball is out so holding and dragging right away works for quick chaining
                 this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
                 this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
@@ -673,6 +693,8 @@ const {
                     }
                 }
                 this.transport();
+                
+                }
             }
 
             //exit slowmo on keypress or on landing also pretty important
@@ -2812,6 +2834,106 @@ const {
         }
     }
 
+    /**
+     * MPowerPillar: collectible fire pillar that grants a player ability.
+     * powerType: 'ball' | 'groundedTeleport' | 'groundPound' | 'fullTeleport'
+     */
+    class MPowerPillar extends MDecorative {
+        static COLLECT_RADIUS = 2.5;
+        static BOB_SPEED = 2.5;
+        static BOB_AMP = 3;
+        static ANIM_FPS = 8;
+
+        static CONFIGS = {
+            ball:{ 
+                symKey: null, 
+                glowColor: 'rgba(214, 205, 191, 0.35)' 
+            },
+            groundedTeleport: { 
+                symKey: 'pwrSym_groundedTeleport',  
+                glowColor: 'rgba(165,212,202, 0.35)'
+            },
+            groundPound: { 
+                symKey: 'pwrSym_groundPound',
+                glowColor: 'rgba(168,0,0,0.35)'
+            },
+            fullTeleport: { 
+                symKey: 'pwrSym_fullTeleport',
+                glowColor: 'rgba(165, 212, 202, 0.55)'
+            },
+        };
+ 
+        constructor(x, y, powerType) {
+            super(x, y, 2, 3, (t, self) => {
+                if (self.collected) return gfx.props.misc.pwrtwroff;
+                const frames = gfx.props.misc.pwrtwron;
+                return frames[Math.floor(t * MPowerPillar.ANIM_FPS) % frames.length];
+            });
+            this.powerType = powerType;
+            this.collected  = false;
+        }
+
+        tick(dt) {
+            if (this.collected) return;
+            const player = this.engine?.player;
+            if (!player || player.room !== this.room) return;
+
+            const dx = (player.x + player.w / 2) - (this.x + 1);
+            const dy = (player.y + player.h / 2) - (this.y + 1.5);
+            if (Math.sqrt(dx * dx + dy * dy) <= MPowerPillar.COLLECT_RADIUS) {
+                this._collect(player);
+            }
+        }
+
+        _collect(player) {
+            if (this.collected) return;
+            this.collected = true;
+            player.powers[this.powerType] = true;
+
+            const cam = this.engine?.renderer?.camera;
+            if (cam && this.engine) {
+                const { x: sx, y: sy } = cam.worldToScreen(this.x + 1, this.y - 1);
+                (this.engine._collectAnims ??= []).push({
+                    type: this.powerType,
+                    progress: 0,
+                    duration: 0.75,
+                    startX: sx,
+                    startY: sy,
+                });
+                (this.engine._hudFlash ??= {})[this.powerType] = 0.6;
+            }
+        }
+
+        render(ctx, camera, t, pixel) {
+            super.render(ctx, camera, t, pixel);
+            if (this.collected) return;
+
+            const cfg = MPowerPillar.CONFIGS[this.powerType];
+            const symSprite = cfg?.symKey
+                ? gfx.props.misc[cfg.symKey]
+                : gfx.player.spikeBall;
+            if (!symSprite) return;
+
+            const bob = Math.sin(t * MPowerPillar.BOB_SPEED) * MPowerPillar.BOB_AMP;
+            const { x: sx, y: sy } = camera.worldToScreen(this.x + 1, this.y - 1);
+            const sw = symSprite.w * pixel;
+            const sh = symSprite.h * pixel;
+
+            //humhumhum bug
+            if (cfg?.glowColor) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(sx, sy + bob, sw * 1.1, 0, Math.PI * 2);
+                ctx.fillStyle = cfg.glowColor;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            symSprite.draw(ctx, sx - sw / 2, sy + bob - sh / 2, pixel);
+        }
+    }
+
+
     return { 
         MDecorative, 
         MSolid, 
@@ -2825,6 +2947,7 @@ const {
         MBlob, 
         MBreakWall,
         MMinotaur,
-        MMimic
+        MMimic,
+        MPowerPillar,
     };
 })();
