@@ -1,5 +1,8 @@
 * {
-    transition: 1s;
+    transition: 0s;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 script {
     font-family: Pixelify Sans;
@@ -13,7 +16,9 @@ body {
     overflow: hidden;
     align-items: center;
     transition: 0s;
-    
+    background: #000;
+    display: flex; 
+    justify-content: center;
 }
 a {
     display: inline-block;
@@ -41,8 +46,11 @@ a:hover::before {
 }
 
 canvas {
-    /*disable anti-aliasing*/
     image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    height: 100vh;
+    width: auto;
+    display: block;
 }
 
 canvas:focus {
@@ -52,19 +60,23 @@ canvas:focus {
 #container {
     position: relative;
     color: black;
-    left: 0%;
+    height: 100vh;
+    aspect-ratio: auto;
 }
 
 #container canvas, #overlay {
     position: absolute;
     top: 0;
     left: 0;
+    height: 100%;
+    width: auto;
 }
 
 #fullscreen-container {
-    position: absolute;
-    left: 555px;
+    position: fixed;
+    right: 5px;
     top: 5px;
+    left: auto;
 }
 
 #fullscreen {
@@ -74,7 +86,7 @@ canvas:focus {
     padding: 5px;
     box-sizing: border-box;
     cursor: pointer;
-    transition: background 200ms;
+    transition: 200ms;
     position: relative;
     float: right;
     
