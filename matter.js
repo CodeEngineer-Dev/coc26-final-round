@@ -447,9 +447,9 @@ const {
      * 
      */
     class MPlayer extends MEntity {
-        static throwFactor = 10;
-        static maxDrag = 120;
-        static minDrag = 18;
+        static throwFactor = 14;
+        static maxDrag = 180;
+        static minDrag = 28;
 
         /** Constructs an instance of MPlayer.
          * 
@@ -478,7 +478,7 @@ const {
             this.ball = null; //new MBall(this, 0, 0);
             this.carrying = true;
 
-            this.maxDrag = 120;
+            this.maxDrag = 180;
             this.powers = {
                 ball: false,
                 groundedTeleport: false,
@@ -605,14 +605,14 @@ const {
             if (!this.carrying) this.ball?.tick?.(dt, {}, { friction: 1 });
 
             //if (events.Mouse && !this.prevMouse && !this.ball) {
-            if (events.Mouse && !this.prevMouse && !this.ball && this.powers.ball) {
-                //start drag
+            if (events.Mouse && !this.prevMouse && (!this.ball || this.carrying) && this.powers.ball) {
                 this.dragging = true;
                 this.dragInitX = events.MouseX;
                 this.dragInitY = events.MouseY;
                 this.dragX = events.MouseX;
                 this.dragY = events.MouseY;
-                this.ball = new MBall(this, 0, 0);
+                //reuse existing if recalled
+                if (!this.ball) this.ball = new MBall(this, 0, 0);
                 this.carrying = true;
             } else if (events.Mouse && this.dragging) {
                 //update drag
@@ -627,8 +627,8 @@ const {
                 const len = Math.sqrt(dx * dx + dy * dy);
                 this.carrying = false;
                 if (len < this.constructor.minDrag) {
-                    //too small a drag
-                    this.ball = null;
+                    //don't destroy it :sob
+                    this.carrying = true;
                 } else {
                     //real throw
                     if (len > this.constructor.maxDrag) {
@@ -640,7 +640,7 @@ const {
                         dy / tsz * MPlayer.throwFactor,
                     );
                 }
-            } else if (events.Mouse && !this.prevMouse && this.ball) {
+            } else if (events.Mouse && !this.prevMouse && this.ball && !this.carrying) {
                 const canTeleport = this.powers.fullTeleport ||
                        (this.powers.groundedTeleport && this.ball.onGround);
                 if (canTeleport) {
@@ -708,9 +708,15 @@ const {
             }
 
             //remove ball on any keypress while it's in free flight
+            // if (this.ball && !this.carrying && !this.engine.slowMo && !this.dragging) {
+            //     if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+            //         this.ball = null;
+            //     }
+            // }
+
             if (this.ball && !this.carrying && !this.engine.slowMo && !this.dragging) {
                 if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
-                    this.ball = null;
+                    this.carrying = true;
                 }
             }
 
@@ -1680,8 +1686,9 @@ const {
             if (!player) return;
 
             if (this.state === 'off') {
-                const dx = (player.x + player.w / 2) - this.x;
-                const dy = (player.y + player.h / 2) - this.y;
+                if (player.room !== this.room) return;
+                const dx = (player.x + player.w / 2) - (this.x + 1);
+                const dy = (player.y + player.h / 2) - (this.y + 2);
                 if (Math.sqrt(dx * dx + dy * dy) <= MCheckpoint.ACTIVATE_RADIUS) {
                     this._activate(player);
                 }
