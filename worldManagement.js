@@ -11,11 +11,11 @@ const roomTemplates = {
             "#                                       #",
             "#                                       #",
             "#                                       #",
+            "#   Q                                   #",
             "#                                       #",
             "#                                       #",
             "#                                       #",
-            "#                                       #",
-            "#                                       #",
+            "#                F                      #",
             "#                                       #",
             "#                                       #",
             "#                                       #",
@@ -59,6 +59,9 @@ const roomTemplates = {
             'W': (x, y) => new MBreakWall(x, y, 'brickBreakWall', 'right'),
             // 'V': (x, y) => new MBreakWall(x, y, 'grassyBreakWall', 'right'),
             // 'U': (x, y) => new MBreakWall(x, y, 'mushroomBreakWall','right'),
+            
+            'F': (x, y) => new MFlyer(x, y),
+            'Q': (x, y) => new MSwarmer(x, y, 5),
         },
     },
     A: {
