@@ -307,7 +307,7 @@
         engine.onRoomChange = (dir) => {
             //boost player when going up
             if (dir === 'top') engine.player.vy *= 1.6;
-            
+
             if (roomTransition.active) return;
             roomTransition.capture(canvas, engine);
             roomTransition.start(dir);
@@ -534,7 +534,7 @@
                             const color = MM_TILE_COLORS[line[c]];
                             if (!color) continue;
                             minimapCtx.fillStyle = color;
-                            minimapCtx.fillRect(ox + c * MM_CELL, oy + r * MM_CELL, MM_CELL - 1, MM_CELL - 1);
+                            minimapCtx.fillRect(ox + c * MM_CELL, oy + r * MM_CELL, MM_CELL, MM_CELL);
                         }
                     }
 
