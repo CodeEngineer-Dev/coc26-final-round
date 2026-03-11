@@ -1420,7 +1420,8 @@ const {
          * @param {{ canvas: HTMLCanvasElement, tileSize?: number }} config 
          */
         constructor(config) {
-            const { canvas, tileSize } = config;
+            const { canvas, tileSize,  resolution} = config;
+            this.res = resolution ?? 9;
             this.canvas = canvas;
             this.tsz = tileSize ?? 20;
             this.baseTsz = this.tsz;
@@ -1470,9 +1471,11 @@ const {
             if (!this.lockZoom) {
                 const tszX = this.w / room.width;
                 const tszY = this.h / room.height;
-                this.tsz = Math.ceil(Math.max(this.baseTsz, tszX, tszY));
-                //const raw = Math.max(this.baseTsz, tszX, tszY);
-                //this.tsz = Math.ceil(raw / this.res) * this.res;
+                // this.tsz = Math.ceil(Math.max(this.baseTsz, tszX, tszY));
+                // //const raw = Math.max(this.baseTsz, tszX, tszY);
+                // //this.tsz = Math.ceil(raw / this.res) * this.res;
+                const raw = Math.max(this.baseTsz, tszX, tszY);
+                this.tsz = Math.ceil(raw / this.res) * this.res;
             }
 
             //visible world area at the (possibly zoomed) tsz
@@ -1552,7 +1555,7 @@ const {
             this.res = resolution;
             this.pixel = tileSize / resolution;
             this.basePixel = tileSize / resolution;
-            this.camera = new MCamera({ canvas: this.canvas, tileSize: this.tsz });
+            this.camera = new MCamera({ canvas: this.canvas, tileSize: this.tsz, resolution: this.res });
         }
         
         /** Renders everything except the player */
