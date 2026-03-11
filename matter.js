@@ -872,8 +872,14 @@ const {
 
                 if (this.grounded && Math.abs(this.xv) < 0.15) {
                     this.stallTimer += dt;
-                    if (this.stallTimer > 0.25) { this.patrolDir *= -1; this.stallTimer = 0; }
-                } else { this.stallTimer = 0; }
+                    if (this.stallTimer > 0.25) {
+                        this.patrolDir *= -1;
+                        //cooldown before it can stall-flip again
+                        this.stallTimer = -0.4;
+                    }
+                } else {
+                    this.stallTimer = 0;
+                }
 
                 this.jumpCooldown -= dt;
                 if (this.grounded && this.jumpCooldown <= 0) {
@@ -960,10 +966,20 @@ const {
             const myX = this.x + this.w / 2;
             const dx = targetX - myX;
 
+            // if (Math.abs(dx) > 0.12) {
+            //     if (dx > 0) this._moveRight = true;
+            //     else this._moveLeft  = true;
+            //     this.facing = dx > 0 ? 1 : -1;
+            // }
+
+            //new concept
             if (Math.abs(dx) > 0.12) {
                 if (dx > 0) this._moveRight = true;
-                else this._moveLeft  = true;
-                this.facing = dx > 0 ? 1 : -1;
+                else this._moveLeft = true;
+                //only commit facing for real movement
+                if (Math.abs(dx) > 0.5) {          
+                    this.facing = dx > 0 ? 1 : -1;
+                }
             }
 
             if (step.jump) {
