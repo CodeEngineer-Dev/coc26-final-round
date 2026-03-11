@@ -2531,19 +2531,24 @@ const {
                     const hDir = this._playerHDir();
                     if (hDir ===  1) this._moveRight = true;
                     if (hDir === -1) this._moveLeft  = true;
-                    this.facing = hDir || this.facing;
+                    //this.facing = hDir || this.facing;
+                    if (hDir && hDir !== this.facing) {
+                        this.facing = hDir;
+                        this._facingLock = 0.2;
+                    }
                 }
             } else {
                 //patrol
                 if (this.patrolDir === 1) this._moveRight = true;
-                else this._moveLeft  = true;
+                else this._moveLeft = true;
                 this.facing = this.patrolDir;
 
                 if (this.grounded && Math.abs(this.xv) < 0.15) {
                     this.stallTimer += dt;
                     if (this.stallTimer > 0.25) {
                         this.patrolDir *= -1;
-                        this.stallTimer = 0;
+                        this.stallTimer = -0.4;
+                        this._facingLock = 0.3;
                     }
                 } else {
                     this.stallTimer = 0;
