@@ -1470,7 +1470,9 @@ const {
             if (!this.lockZoom) {
                 const tszX = this.w / room.width;
                 const tszY = this.h / room.height;
-                this.tsz = Math.max(this.baseTsz, tszX, tszY);
+                this.tsz = Math.ceil(Math.max(this.baseTsz, tszX, tszY));
+                //const raw = Math.max(this.baseTsz, tszX, tszY);
+                //this.tsz = Math.ceil(raw / this.res) * this.res;
             }
 
             //visible world area at the (possibly zoomed) tsz
