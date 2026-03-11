@@ -15,6 +15,7 @@ const {
     MPowerPillar,
     MFlyer,
     MSwarmer,
+    MPothead
  } = (() => {
     /** MBox: an AABB hitbox implementation.
      * 
@@ -3319,6 +3320,147 @@ const {
     }
 
 
+    class MPothead extends MEnemy {
+        static ATTACK_RANGE = 3.5;
+        static ATTACK_WINDUP = 0.13; 
+        static ATTACK_COOLDOWN = 2.2;
+        static HIT_FLASH_DURATION = 0.25;
+        static ANIM_FPS = {
+            idle: 3, 
+            run: 6, 
+            attack: 8 
+        };
+
+        constructor(x, y) {
+            super(x, y, 0.9, 1.3, 120, (t, self) => {
+                if (self._hitFlash > 0) return gfx.enemies.pothead.hit;
+
+                const state  = self.state ?? 'idle';
+                const frames = gfx.enemies.pothead[state] ?? gfx.enemies.pothead.idle;
+
+                if (!Array.isArray(frames)) return frames;
+
+                const fps = MPothead.ANIM_FPS[state] ?? 4;
+
+                if (state === 'attack') {
+                    //clamp to last frame don't loop the attack animation
+                    const fi = Math.min(frames.length - 1, Math.floor(self._attackTimer * fps));
+                    return frames[fi];
+                }
+                return frames[Math.floor(t * fps) % frames.length];
+            });
+
+            this.moveSpeed = 5;
+            this.aggroRange = 10;
+            this.deAggroRange = 16;
+
+            this._attackCooldown = 0;
+            this._attacking = false;
+            this._attackTimer = 0;
+            this._hitFlash = 0;
+            this._damageLanded = false;
+        }
+
+        takeDamage(amount) {
+            this._hitFlash = MPothead.HIT_FLASH_DURATION;
+            super.takeDamage(amount);
+        }
+
+        ai(dt) {
+            if (this._hitFlash > 0) this._hitFlash -= dt;
+            if (this._attackCooldown > 0) this._attackCooldown -= dt;
+
+            const dist = this._playerDist();
+
+            if (!this.chaseMode && dist <= this.aggroRange) this.chaseMode = true;
+            if (this.chaseMode && dist > this.deAggroRange) this.chaseMode = false;
+
+            //attack in progress
+            if (this._attacking) {
+                this._attackTimer += dt;
+                this.facing = this._playerHDir() || this.facing;
+                this.state  = 'attack';
+
+                //fire damage at the lunge-up frame 
+                if (!this._damageLanded && this._attackTimer >= MPothead.ATTACK_WINDUP) {
+                    this._damageLanded = true;
+                    const player = this.engine?.player;
+                    if (player && this.hbox.collision(player.hbox)) {
+                        this.onPlayerContact(player);
+                    }
+                }
+
+                //3 frames at 8fps = 0.375s total
+                const totalDuration = gfx.enemies.pothead.attack.length / MPothead.ANIM_FPS.attack;
+                if (this._attackTimer >= totalDuration) {
+                    this._attacking = false;
+                    this._attackTimer = 0;
+                    this._damageLanded = false;
+                    this._attackCooldown = MPothead.ATTACK_COOLDOWN;
+                }
+                return;
+            }
+
+            //start attack
+            if (this.chaseMode && this._attackCooldown <= 0 && dist <= MPothead.ATTACK_RANGE) {
+                this._attacking = true;
+                this._attackTimer = 0;
+                this._damageLanded = false;
+                this.state = 'attack';
+                return;
+            }
+
+            //chase
+            if (this.chaseMode) {
+                this._updatePath(dt, 0.5);
+                if (this._path?.length) {
+                    this._followPath(dt);
+                } 
+                else {
+                    const hDir = this._playerHDir();
+                    if (hDir ===  1) this._moveRight = true;
+                    if (hDir === -1) this._moveLeft  = true;
+                    if (hDir && hDir !== this.facing) {
+                        this.facing = hDir;
+                        this._facingLock = 0.2;
+                    }
+                }
+            } else {
+                //patrol
+                if (this.patrolDir === 1) this._moveRight = true;
+                else this._moveLeft  = true;
+                this.facing = this.patrolDir;
+
+                if (this.grounded && Math.abs(this.xv) < 0.15) {
+                    this.stallTimer += dt;
+                    if (this.stallTimer > 0.25) { 
+                        this.patrolDir *= -1; 
+                        this.stallTimer = -0.4; 
+                    }
+                } else {
+                    this.stallTimer = 0;
+                }
+
+                this.jumpCooldown -= dt;
+                if (this.grounded && this.jumpCooldown <= 0) {
+                    this._jumpQueued  = true;
+                    this.jumpCooldown = 1.5 + Math.random() * 2;
+                }
+            }
+
+            //jump sprite is nonexestant 
+            this.state = !this.grounded? 'idle' : (Math.abs(this.xv) > 0.5 ? 'run' : 'idle');
+        }
+
+        onPlayerContact(player) {
+            //the pothead lunges upward so player gets popped into the air
+            const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
+            player.xv = Math.sign(dx || 1) * 5;
+            player.yv = -14;
+            player.health = Math.max(0, player.health - 25);
+        }
+    }
+
     return { 
         MDecorative, 
         MSolid, 
@@ -3336,5 +3478,6 @@ const {
         MPowerPillar,
         MFlyer,
         MSwarmer,
+        MPothead
     };
 })();
