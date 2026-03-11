@@ -257,11 +257,11 @@ const roomTemplates = {
             "################",
             "################",
             "#####         ##",
-            "##            ##",
+            "##      Q Q   ##",
             "#            @##",
-            "#            @##",
+            "#    Q       @##",
             "#         @  @##",
-            "#         @  @##",
+            "#    F    @  @##",
             "#         @@ @##",
             "          @@@@##",
             "         @@@@@##",
@@ -272,6 +272,8 @@ const roomTemplates = {
         entities: {
             'C': (x, y) => new MCheckpoint(x, y - 3), 
             'Y': (x, y) => new MMimic(x, y - 0.3),
+            'F': (x, y) => new MFlyer(x, y),
+            'Q': (x, y) => new MSwarmer(x, y, 5),
         },
     },
     J: {

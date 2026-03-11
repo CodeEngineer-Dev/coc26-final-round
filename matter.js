@@ -12,7 +12,9 @@ const {
     MBreakWall,
     MMinitaur,
     MMimic,
-    MPowerPillar
+    MPowerPillar,
+    MFlyer,
+    MSwarmer,
  } = (() => {
     /** MBox: an AABB hitbox implementation.
      * 
@@ -3034,6 +3036,258 @@ const {
     }
 
 
+    class MSwarmerUnit extends MEnemy {
+        constructor(x, y, controller) {
+            super(x, y, 0.45, 0.45, 15, (t, self) => {
+                if (self.dead) {
+                    const frames = gfx.enemies.wingShroom.die;
+                    return frames[Math.min(Math.floor(self.stateTime * 8), frames.length - 1)];
+                }
+                const frames = gfx.enemies.wingShroom.idle;
+                return frames[Math.floor(t * 14) % frames.length];
+            });
+            this.controller = controller;
+            this._homeX = x;
+            this._homeY = y;
+            this.moveSpeed = 11;
+            this.aggroRange = 18;
+            this.deAggroRange = 26;
+        }
+
+        ai(dt) {}
+
+        tick(dt) {
+            if (this.dead) {
+                this.stateTime += dt;
+                return;
+            }
+            if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            this.stateTime += dt;
+
+            const player = this.engine?.player;
+            const ctrl = this.controller;
+
+            let targetX = this._homeX;
+            let targetY = this._homeY;
+            if (ctrl?.aggroed && player) {
+                targetX = player.x + player.w / 2;
+                targetY = player.y + player.h / 2;
+            }
+
+            //slight separation from siblings
+            if (ctrl?.units) {
+                for (const unit of ctrl.units) {
+                    if (unit === this || unit.dead) continue;
+                    const sdx = (this.x + this.w / 2) - (unit.x + unit.w / 2);
+                    const sdy = (this.y + this.h / 2) - (unit.y + unit.h / 2);
+                    const sd = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
+                    if (sd < 1.4) {
+                        this.xv += (sdx / sd) * 18 * dt;
+                        this.yv += (sdy / sd) * 18 * dt;
+                    }
+                }
+            }
+
+            const dx = targetX - (this.x + this.w / 2);
+            const dy = targetY - (this.y + this.h / 2);
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            this.xv += (dx / len) * 30 * dt;
+            this.yv += (dy / len) * 30 * dt;
+
+            this.xv *= Math.pow(0.001, dt);
+            this.yv *= Math.pow(0.001, dt);
+            const spd = Math.sqrt(this.xv * this.xv + this.yv * this.yv);
+            if (spd > this.moveSpeed) {
+                this.xv = this.xv / spd * this.moveSpeed;
+                this.yv = this.yv / spd * this.moveSpeed;
+            }
+
+            this.x += this.xv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, this.engine.world)) {
+                this.x -= this.xv * dt;
+                this.xv *= -0.5;
+                this.transport();
+                this.updateHitbox();
+            }
+
+            this.y += this.yv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, this.engine.world)) {
+                this.y -= this.yv * dt;
+                this.yv *= -0.5;
+                this.transport();
+                this.updateHitbox();
+            }
+
+            this.facing = this.xv >= 0 ? 1 : -1;
+
+            if (player && player.room === this.room && this.contactCooldown <= 0) {
+                this.updateHitbox();
+                player.updateHitbox();
+                if (this.hbox.collision(player.hbox)) {
+                    this.onPlayerContact(player);
+                    this.contactCooldown = 0.6;
+                }
+            }
+        }
+
+        onPlayerContact(player) {
+            const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
+            player.xv = Math.sign(dx || 1) * 5;
+            player.yv = -3;
+            player.health = Math.max(0, player.health - 8);
+        }
+    }
+
+    class MSwarmer {
+        constructor(x, y, count = 4) {
+            this.x = x;
+            this.y = y;
+            this.count = count;
+            this.units = [];
+            this.aggroed = false;
+            this._spawned = false;
+            this.aggroRange = 18;
+            this.deAggroRange = 28;
+            this.engine = null;
+            this.room = null;
+            //dummy dbox so world iteration doesn't explode
+            this.dbox = { collision: () => false };
+        }
+
+        tick(dt) {
+            //lazy-spawn on first tick once engine an' room are live
+            if (!this._spawned) {
+                this._spawned = true;
+                for (let i = 0; i < this.count; i++) {
+                    const angle = (i / this.count) * Math.PI * 2;
+                    const unit = new MSwarmerUnit(
+                        this.x + Math.cos(angle) * 0.8,
+                        this.y + Math.sin(angle) * 0.8,
+                        this
+                    );
+                    this.units.push(unit);
+                    this.engine.world.addEntity(this.room, unit);
+                }
+            }
+
+            const player = this.engine?.player;
+            if (!player || player.room !== this.room) {
+                this.aggroed = false;
+                return;
+            }
+
+            const dx = (player.x + player.w / 2) - this.x;
+            const dy = (player.y + player.h / 2) - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (!this.aggroed && dist <= this.aggroRange) this.aggroed = true;
+            if (this.aggroed && dist > this.deAggroRange) {
+                const anyClose = this.units.some(u => !u.dead && u._playerDist() <= this.deAggroRange);
+                if (!anyClose) this.aggroed = false;
+            }
+        }
+
+        //stub so world.iterate doesn't crash on render checks
+        render() {}
+    }
+
+    class MFlyer extends MEnemy {
+        constructor(x, y) {
+            super(x, y, 0.9, 0.9, 40, (t, self) => {
+                if (self.dead) {
+                    const frames = gfx.enemies.wingShroom.die;
+                    return frames[Math.min(Math.floor(self.stateTime * 8), frames.length - 1)];
+                }
+                const frames = gfx.enemies.wingShroom.idle;
+                return frames[Math.floor(t * 6) % frames.length];
+            });
+            this.moveSpeed = 7;
+            this.aggroRange = 15;
+            this.deAggroRange = 22;
+            this._homeX = x + 0.5;
+            this._homeY = y + 0.5;
+        }
+
+        ai(dt) {}
+
+        tick(dt) {
+            if (this.dead) {
+                this.stateTime += dt;
+                return;
+            }
+            if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            this.stateTime += dt;
+
+            const player = this.engine?.player;
+            const dist = this._playerDist();
+
+            const targetX = dist <= this.aggroRange
+                ? player.x + player.w / 2
+                : this._homeX;
+            const targetY = dist <= this.aggroRange
+                ? player.y + player.h / 2
+                : this._homeY;
+
+            const dx = targetX - (this.x + this.w / 2);
+            const dy = targetY - (this.y + this.h / 2);
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+
+            this.xv += (dx / len) * 20 * dt;
+            this.yv += (dy / len) * 20 * dt;
+
+            this.xv *= Math.pow(0.001, dt);
+            this.yv *= Math.pow(0.001, dt);
+            const spd = Math.sqrt(this.xv * this.xv + this.yv * this.yv);
+            if (spd > this.moveSpeed) {
+                this.xv = this.xv / spd * this.moveSpeed;
+                this.yv = this.yv / spd * this.moveSpeed;
+            }
+
+            this.x += this.xv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, this.engine.world)) {
+                this.x -= this.xv * dt;
+                this.xv *= -0.5;
+                this.transport();
+                this.updateHitbox();
+            }
+
+            this.y += this.yv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, this.engine.world)) {
+                this.y -= this.yv * dt;
+                this.yv *= -0.5;
+                this.transport();
+                this.updateHitbox();
+            }
+
+            this.facing = this.xv >= 0 ? 1 : -1;
+
+            if (player && player.room === this.room && this.contactCooldown <= 0) {
+                this.updateHitbox();
+                player.updateHitbox();
+                if (this.hbox.collision(player.hbox)) {
+                    this.onPlayerContact(player);
+                    this.contactCooldown = 0.8;
+                }
+            }
+        }
+
+        onPlayerContact(player) {
+            const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
+            player.xv = Math.sign(dx || 1) * 8;
+            player.yv = -5;
+            player.health = Math.max(0, player.health - 12);
+        }
+    }
+
+
     return { 
         MDecorative, 
         MSolid, 
@@ -3049,5 +3303,7 @@ const {
         MMinitaur,
         MMimic,
         MPowerPillar,
+        MFlyer,
+        MSwarmer,
     };
 })();

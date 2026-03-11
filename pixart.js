@@ -3509,40 +3509,6 @@ var gfxData = {
 				'---..ddeeee..---',
 				'--.ddddddeeee.--',
 			],
-
-			pwrSym_groundedTeleport: [
-				"----m----",
-				"--mmmmm--",
-				"-mmiaim--",
-				"-mmmmmmm-",
-				"--mmmmm--",
-				"----m----",
-				"---------",
-				"-m-m-m-m-",
-				"mmmmmmmmm",
-			],
-			pwrSym_groundPound: [
-				"----i----",
-				"---iii---",
-				"--iiiii--",
-				"----i----",
-				"----h----",
-				"---hhh---",
-				"--hhhhh--",
-				"---hhh---",
-				"----h----",
-			],
-			pwrSym_fullTeleport: [
-				"--m---m--",
-				"-m--m--m-",
-				"m---m---m",
-				"-m-mim-m-",
-				"--mmmmm--",
-				"-m-mim-m-",
-				"m---m---m",
-				"-m--m--m-",
-				"--m---m--",
-			],
         },
     },
     enemies: {
@@ -6019,6 +5985,7 @@ var gfxData = {
         },
     },
 };
+
 
 
 /** Sprite reference, from spritesheet.
