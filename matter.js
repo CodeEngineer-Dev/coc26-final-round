@@ -344,17 +344,18 @@ const {
     class MBall extends MEntity {
         static bounce = 0.65;
 
-        constructor(player, xv, yv) {
+        constructor(owner, xv, yv) {
             const w = 1, h = 1;
             super(
-                player.x + player.w / 2 - w / 2,
-                player.y + player.h / 2 - h / 2,
+                owner.x + owner.w / 2 - w / 2,
+                owner.y + owner.h / 2 - h / 2,
                 w, h, 1, () => gfx.player.spikeBall
             );
             this.xv = xv;
             this.yv = yv;
-            this.engine = player.engine;
-            this.room = player.room;
+            this.owner = owner;
+            this.engine = owner.engine;
+            this.room = owner.room;
             this.angle = 0;
             this.onGround = false;
             this._hitCooldowns = new Map();
@@ -420,7 +421,11 @@ const {
             }
 
             //enemy collision bounce and deal damage
-            const hitEnemies = this.touchingAll(MEnemy, world);
+            let hitEnemies = this.touchingAll(MEnemy, world);
+            if (this.hbox.collision(this.engine.player)) {
+                hitEnemies.push(this.engine.player);
+            }
+            hitEnemies = hitEnemies.filter(e => e != this.owner);
             for (const enemy of hitEnemies) {
                 if (enemy.dead || this._hitCooldowns.has(enemy)) continue;
 
@@ -2773,6 +2778,7 @@ const {
                     // => xv = Δx (1/4 g^2 / (Δx^2 + Δy^2))^(1/4)
 
                     //Arrow commenting here @Judges
+                    // shampooed noodles and bacon -xyzyyxx
 
                     const p = this.engine.player;
                     const g = this.engine.gravity;
