@@ -492,7 +492,6 @@ const {
             };
         }
 
-
         _separateFromEnemies() {
             const room = this.room;
             const world = this.engine?.world;
@@ -1516,7 +1515,10 @@ const {
          * @returns {boolean}
          */
         inView(obj) {
-            return obj?.dbox?.collision?.(this.viewBox) ?? false;    
+            // MMimic is a special case, cz it can throw spike balls that are outside its view box
+            // and i was too lazy to do stuff the proper way
+            // so here we go lol
+            return obj instanceof MMimic || (obj?.dbox?.collision?.(this.viewBox) ?? false);
         }
 
         /** Takes world coordinates, returns screen coordinates.
