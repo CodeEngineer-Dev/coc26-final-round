@@ -23,10 +23,11 @@ const roomTemplates = {
             "#                                       #",
             "#                                       #",
             "#    P                                  #",
-            "#                         Y             #",
+            "#            1            Y             #",
             "#########################################",
         ],  
         entities: {
+            '1': (x, y) => new MPowerPillar(x - 0.5, y - 1.8, "ball"),
             'Y': (x, y) => new MMimic(x, y - 0.3), // why is this Y? ftlogidk
             'M': (x, y) => new MMinitaur(x, y - 0.3),
             'E': (x, y) => new MBlob(x, y, 'g2'),
