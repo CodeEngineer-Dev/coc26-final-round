@@ -2565,7 +2565,7 @@ const {
             const { x, y } = camera.worldToScreen(this.x, this.y);
             const sprite = this.texturer(t, this);
             const offsetX = ((this.w * camera.tsz - sprite.w * pixel) / 2);
-            const offsetY = this.h * camera.tsz - sprite.h * pixel + pixel*1;
+            const offsetY = this.h * camera.tsz - sprite.h * pixel + pixel*1.3;
             sprite.draw(ctx, x + offsetX, y + offsetY, pixel, this.facing ?? 1);
 
             // hovering spear
