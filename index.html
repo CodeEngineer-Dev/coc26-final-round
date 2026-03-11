@@ -306,7 +306,7 @@
         const roomTransition = new RoomTransition();
         engine.onRoomChange = (dir) => {
             //boost player when going up
-            if (dir === 'top') engine.player.vy *= 1.6;
+            if(dir === 'top' && engine.player.vy > -2) engine.player.vy = -3;
 
             if (roomTransition.active) return;
             roomTransition.capture(canvas, engine);
