@@ -1146,13 +1146,13 @@ const {
             this._deathTimer = 0;
         }
 
-        deathAlpha() {
-            ctx.globalAlpha = 1 - this._deathTimer / this.constructor._deathAnimationTime;
+        deathAlpha(ctx) {
+            ctx.globalAlpha = 1 - this._deathTimer / (this.constructor.deathAnimationTime ?? MEnemy.deathAnimationTime);
         }
 
         render(ctx, camera, t, pixel) {
             ctx.save();
-            this.deathAlpha();
+            this.deathAlpha(ctx);
             super.render(ctx, camera, t, pixel);
             ctx.restore();
         }
@@ -2622,7 +2622,7 @@ const {
 
         render(ctx, camera, t, pixel) {
             ctx.save();
-            this.deathAlpha();
+            this.deathAlpha(ctx);
             const { x, y } = camera.worldToScreen(this.x, this.y);
             const sprite = this.texturer(t, this);
             const offsetX = ((this.w * camera.tsz - sprite.w * pixel) / 2);
@@ -2866,8 +2866,7 @@ const {
          */
         render(ctx, camera, t, pixel) {
             ctx.save();
-            this.deathAlpha();
-            window.console.log(ctx.globalAlpha, this._deathTimer)
+            this.deathAlpha(ctx);
             super.render(ctx, camera, t, pixel);
             if (this.ball?.room == this.room) 
                 this.ball?.render?.(ctx, camera, t, pixel);
