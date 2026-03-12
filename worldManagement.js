@@ -426,7 +426,7 @@ const roomTemplates = {
             "##BBbbbbbb  b              #######",
             "###BBBbbbbbbb              #######",
             "####BBbbbbbb               #######",
-            "######BBBbbbb              #######",
+            "######BBBbbbb     P        #######",
             "########BBBbbb C           #######",
             "######################     #######",
         ],
@@ -449,13 +449,17 @@ const roomTemplates = {
             "BBbbbbb            BBB",
             "BBbbbbbbb b       BBBB",
             "BBbbbbbbbbb       BBB#",
-            "BBbbbbbbbb       BBB##",
+            "BBbbbbbbbb     E BBB##",
             "BBbbbbbbbbbbb    BB###",
             "#BBbbbbbbbbb  ########",
             "#####bbbb#############",
             "######################",
             "######################",
         ],
+        entities: {
+            'E': (x, y) => new MBlob(x, y, 'g2'),
+            'e': (x, y) => new MBlob(x, y, 'g1'),
+        },
     },
     Q: {
         bitmap: [
@@ -578,7 +582,7 @@ const roomTemplates = {
             "                                    ",
             "                                    ",
             "                        BBBBB       ",
-            "    P                 BBBBBbbbb     ",
+            "                      BBBBBbbbb     ",
             "            S       BBBBBBBbbbbBB   ",
             "         BBBBBBBBBBBBBBBBBBBbbbBBB  ",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -601,10 +605,10 @@ const roomTemplates = {
     },
     V: {
         bitmap: [
-            "                          ",
-            "                          ",
-            "                          ",
-            "                                     ",
+            "                                      ",
+            "                                      ",
+            "                                      ",
+            "                                      ",
             "                             BBBBBBBBB",
             "                         BBBBBBBBBBBBB",
             "                      BBBBBBBBBBBBBBBB",
@@ -620,12 +624,12 @@ const roomTemplates = {
             "BBBBBBBBBBBBBbbbbbbbbbbbbbbbbbbbbbbBBB",
             "BBBBBBBBBBBBBBbbbbbbbbbbbbbbbbbbbbbBBB",
             "BBBBBBBBBBBBBBBBbbbbbbbbbbbbbbbbbbBBBB",
-            "BBBBBBBBBBBBBBBBBBBbbbbbbbbbPbbbbBBBBB",
+            "BBBBBBBBBBBBBBBBBBBbbbbbbbbbpbbbbBBBBB",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
         ],
         entities: {
-            'P': (x, y) => new MNPC(x - 0.5, y - 0.5, [
+            'p': (x, y) => new MNPC(x - 0.5, y - 0.5, [
                 "Normally, there'd be a buncha NPCs down here...",
                 "To give you advice and sell stuff.",
                 "But nobody implemented that yet...",
