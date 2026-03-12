@@ -27,6 +27,10 @@ const roomTemplates = {
             "#########################################",
         ],  
         entities: {
+            '1': (x, y) => new MPowerPillar(x, y - 1.8, 'ball'),
+            '2': (x, y) => new MPowerPillar(x, y - 1.8, 'groundedTeleport'),
+            '3': (x, y) => new MPowerPillar(x, y - 1.8, 'groundPound'),
+            '4': (x, y) => new MPowerPillar(x, y - 1.8, 'fullTeleport'),
             'H': (x, y) => new MPothead(x, y),
             'Y': (x, y) => new MMimic(x, y - 0.3), // why is this Y? ftlogidk
             'M': (x, y) => new MMinitaur(x, y - 0.3),
