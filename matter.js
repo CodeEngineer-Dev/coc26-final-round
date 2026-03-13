@@ -333,8 +333,8 @@ const {
                 this.y -= this.yv * dt;
                 if (this.yv > 0) {
                     this.coyote = 0;
-                    this.yv = 0;
                 }
+                this.yv = 0;
                 this.transport();
             } else {
                 this.coyote += dt;
