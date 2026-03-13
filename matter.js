@@ -520,6 +520,9 @@ const {
                 fullTeleport: false,
             };
             this._hitFlash = 0;
+
+            this.wallSliding = false;
+            this.wallDir = 0;
         }
 
         takeDamage(amount) {
@@ -635,6 +638,7 @@ const {
                 ? { ...events, KeyW: false, KeyA: false, KeyD: false }
                 : events;
 
+            //start physics
             super.tick(dt, physEvents);
             if (this._hitFlash > 0) this._hitFlash -= dt;
             if (!this._groundedOnEnemy) {
@@ -643,6 +647,34 @@ const {
             }
             this._groundedOnEnemy = false;
 
+            //wall slide detection
+            const world = this.engine.world;
+            this.wallSliding = false;
+            if (!this.grounded && this.yv > 0) {
+                const probe = 0.15;
+                if (events.KeyD) {
+                    this.x += probe; this.updateHitbox();
+                    if (this.touching(MSolid, world)) { this.wallSliding = true; this.wallDir = 1; }
+                    this.x -= probe; this.updateHitbox();
+                }
+                if (!this.wallSliding && events.KeyA) {
+                    this.x -= probe; this.updateHitbox();
+                    if (this.touching(MSolid, world)) { this.wallSliding = true; this.wallDir = -1; }
+                    this.x += probe; this.updateHitbox();
+                }
+            }
+            if (this.wallSliding) {
+                if (this.yv > 3) this.yv = 3;
+                this.facing = -this.wallDir;
+            }
+            //wall jump
+            if (this.wallSliding && events.KeyW && !eventsPrev.KeyW) {
+                this.yv = -this.engine.jump;
+                this.xv = -this.wallDir * this.engine.hvel * 0.8;
+                this.wallSliding = false;
+            }
+
+            //then colide
             this._separateFromEnemies();
 
             //enemies hit when the player carrying basically a convulated way of accomplishing that
@@ -829,6 +861,9 @@ const {
                 this.state = "groundpound";
             } else if (this.impactTime !== null) {
                 this.state = "groundpoundimpact";
+            } else if (this.wallSliding) {
+                this.airTime = (this.airTime ?? 0) + dt;
+                this.state =  "wallslide";
             } else if (this.dragging && !this.carrying && !this.ball) {
                 this.state = "throw";
             } else if (!this.grounded) {

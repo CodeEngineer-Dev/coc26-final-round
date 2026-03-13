@@ -771,7 +771,7 @@ const roomTemplates = {
             "             P                      ",
             "                                   ",
             "            e                      ",
-            "          bbbbb  H                 ",
+            "       HH bbbbb                    ",
             "      BBBbbbbbbbBBbbb  BB          ",
             "      BBBBbbbbbbBBBBbbbbb     S    ",
             "     BBBBBbbbbBBBBBBbbbbbbbBBBBBBBB",
