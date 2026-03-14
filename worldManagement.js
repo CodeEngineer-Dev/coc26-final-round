@@ -1215,10 +1215,11 @@ const roomTemplates = {
             "      P                            ",
             "                     F            ",
             "                                   ",
-            "           [                      ]",
+            "       1   [                      ]",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
         ],
         entities: {
+            '1': (x, y) => new MPowerPillar(x, y - 1.8, 'ball'),
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
             "F": (x, y) => new MPothead(x, y),

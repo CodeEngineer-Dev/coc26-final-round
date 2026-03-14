@@ -2325,7 +2325,7 @@ const {
         //render
         render(ctx, camera, t, pixel) {
             //nothing to draw once the gauntlet is cleared
-            if (this._state === "open" && this.completed) return;
+            //if (this._state === "open" && this.completed) return;
             super.render(ctx, camera, t, pixel);
         }
     }
