@@ -1179,7 +1179,7 @@ const roomTemplates = {
             "B                                 B",
             "B                                 B",
             "B                                 B",
-            "B                            P     ",
+            "B                                  ",
             "B                                  ",
             "B                                  ",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
