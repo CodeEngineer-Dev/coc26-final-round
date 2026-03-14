@@ -1165,10 +1165,56 @@ const roomTemplates = {
 
         ],
     },
+    ℤ: {
+        bitmap: [
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                  ",
+            "B                              P   ",
+            "B                                  ",
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        ],
+        entities: {
+            "N": (x, y) => new MPothead(x, y),
+        },
+    },
+    λ: {
+        bitmap: [
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "                                  B",
+            "                                  B",
+            "                                  B",
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        ],
+        entities: {
+            "N": (x, y) => new MPothead(x, y),
+        },
+    },
 };
 
 const worldAssembly = [
-    "            ml",
+    "ℤλ          ml",
     "            nk",
     "            oj",
     "          cdgi",
