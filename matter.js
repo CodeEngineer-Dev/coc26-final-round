@@ -2184,68 +2184,149 @@ const {
         }
     }
 
-    class MGauntletDoor extends MBody {
+    class MGauntletDoor extends MSolid {
         static ANIM_FPS = 15;
         static ANIM_DURATION = 1;
 
         constructor(x, y, roomSide) {
             super(x, y, 1, 3, (t, self) => {
-                let frames = gfx.props.misc.gauntletDoorClose;
-                if (self._state == "open") {
-                    return frames[0];
-                } else if (self._state == "closing") {
-                    return frames[
-                        Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS)
-                    ];
-                } else if (self._state == "opening") {
-                    frames = gfx.props.misc.gauntletDoorOpen;
-                    return frames[
-                        Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS)
-                    ];
-                } else if (self._state == "closed") {
-                    frames = gfx.props.misc.gauntletDoorOpen;
-                    return frames[0];
+                const closeFrames = gfx.props.misc.gauntletDoorClose;
+                const openFrames = gfx.props.misc.gauntletDoorOpen;
+
+                if (self._state === "open") {
+                    return openFrames[openFrames.length - 1];
                 }
+                if (self._state === "opening") {
+                    const fi = Math.min(
+                        openFrames.length - 1,
+                        Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS),
+                    );
+                    return openFrames[fi];
+                }
+                if (self._state === "closing") {
+                    const fi = Math.min(
+                        closeFrames.length - 1,
+                        Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS),
+                    );
+                    return closeFrames[fi];
+                }
+                //closed
+                return closeFrames[closeFrames.length - 1];
             });
 
             this._state = "open";
             this._roomSide = roomSide;
             this.completed = false;
-
             this._stateTimer = 0;
+            this._gauntletStarted = false;
+
+            //start with no hitbox (door is open)
+            this._updateSolidity();
         }
 
+        /** Disable hitbox while open/opening; restore it while closing/closed. */
+        _updateSolidity() {
+            if (this._state === "open" || this._state === "opening") {
+                //no collision
+                this.hbox.set(-99999, -99999, -99998, -99998);
+            } else {
+                this.hbox.setWH(this.x, this.y, this.w, this.h);
+            }
+            this.dbox.setWH(this.x, this.y, this.w, this.h);
+        }
+
+        /**
+         * Returns true when every MEnemy in the room is dead (or removed).
+         * A small start-delay is enforced by the caller so lazily-spawned
+         * enemies (MSwarmerUnit etc.) have time to appear.
+         */
+        _checkAllEnemiesDefeated() {
+            const room = this.room;
+            if (!room) return false;
+
+            for (const entity of room.entities) {
+                if (entity instanceof MEnemy && !entity.dead) return false;
+            }
+            for (const z of room.indices) {
+                for (const obj of room.zia[z]) {
+                    if (obj instanceof MEnemy && !obj.dead) return false;
+                }
+            }
+            return true;
+        }
+
+        //tick tock
         tick(dt) {
             const player = this.engine?.player;
             if (!player) return;
 
-            //proximity check
-            const cx = this.x + 1,
-                cy = this.y + 1.5;
-            const px = player.x + player.w / 2,
-                py = player.y + player.h / 2;
+            //completed gauntlets stay open forever
+            if (this.completed) {
+                this._state = "open";
+                this._updateSolidity();
+                return;
+            }
 
-            if (!this.completed && this.room == player.room) {
-                if (this._state == "open") {
-                    if (this._roomSide == "right") {
-                        if (player.x + player.w < this.x)
-                            this._state = "closing";
-                    } else if (this._roomSide == "left") {
-                        if (player.x > this.x + this.w) this._state = "closing";
-                    }
-                } else if (this._state == "closing") {
-                    this._stateTimer += dt;
-                    if (this._stateTimer > MGauntletDoor.ANIM_DURATION) {
-                        this._state = "closed";
+            //only run logic when the player is actually in this room.
+            if (this.room !== player.room) return;
+
+            switch (this._state) {
+
+                case "open": {
+                    //detect the player crossing the threshold inward.
+                    const crossed =
+                        (this._roomSide === "right" && player.x + player.w < this.x) ||
+                        (this._roomSide === "left"  && player.x > this.x + this.w);
+
+                    if (crossed) {
+                        this._state = "closing";
                         this._stateTimer = 0;
                     }
+                    break;
                 }
-            } else {
-                this._state = "open";
+
+                case "closing": {
+                    this._stateTimer += dt;
+                    if (this._stateTimer >= MGauntletDoor.ANIM_DURATION) {
+                        this._state = "closed";
+                        this._stateTimer = 0;
+                        this._gauntletStarted = true;
+                    }
+                    break;
+                }
+
+                case "closed": {
+                    this._stateTimer += dt;
+                    //grace peroid
+                    if (
+                        this._gauntletStarted &&
+                        this._stateTimer > 0.2 &&
+                        this._checkAllEnemiesDefeated()
+                    ) {
+                        this._state = "opening";
+                        this._stateTimer = 0;
+                    }
+                    break;
+                }
+
+                case "opening": {
+                    this._stateTimer += dt;
+                    if (this._stateTimer >= MGauntletDoor.ANIM_DURATION) {
+                        this._state == "open";
+                        this._stateTimer = 0;
+                        this.completed = true;
+                    }
+                    break;
+                }
             }
+
+            this._updateSolidity();
         }
 
+        //render
         render(ctx, camera, t, pixel) {
+            //nothing to draw once the gauntlet is cleared
+            if (this._state === "open" && this.completed) return;
             super.render(ctx, camera, t, pixel);
         }
     }

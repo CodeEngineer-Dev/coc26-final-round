@@ -4223,7 +4223,7 @@ var gfxData = {
 				'---..ddeeee..---',
 				'--.ddddddeeee.--',
 			],
-			gauntletDoorClose: [
+			gauntletDoorOpen: [
 				[
 					"-..........-",
 					".deeeeeeeee.",
@@ -4795,7 +4795,7 @@ var gfxData = {
 					".dddddeeeee.",
 				]
 			],
-			gauntletDoorOpen: [
+			gauntletDoorClose: [
 
 				[
 					"-..........-",
