@@ -2760,6 +2760,7 @@ const {
 
     class MPoundFloor extends MSolid {
         static BREAK_DURATION = 0.4;
+        static ANIM_FPS = 16;
 
         constructor(x, y, type) {
             super(x, y, 3, 1, (t, self) => {
@@ -2773,13 +2774,7 @@ const {
                     }
                 } else {
                     const frames = gfx.props.misc.breakFloorHit;
-                    const fi = Math.min(
-                        frames.length - 1,
-                        Math.floor(
-                            (self._breakTimer / MBreakWall.BREAK_DURATION) *
-                                frames.length,
-                        ),
-                    );
+                    const fi = Math.floor(t * MPoundFloor.ANIM_FPS) % frames.length;
                     return frames[fi];
                 }
             });
