@@ -13,6 +13,7 @@ const {
     MGauntletDoor,
     MNPC,
     MBlob,
+    MPoundFloor,
     MBreakWall,
     MMinitaur,
     MMimic,
@@ -544,7 +545,7 @@ const {
             this.powers = {
                 ball: false,
                 groundedTeleport: false,
-                groundPound: false,
+                groundPound: true,
                 fullTeleport: false,
                 wallJump: false,
             };
@@ -2746,6 +2747,58 @@ const {
         }
     }
 
+    class MPoundFloor extends MSolid {
+        static BREAK_DURATION = 0.4;
+
+        constructor(x, y, type) {
+            super(x, y, 3, 1, (t, self) => {
+                if (!self._breaking) {
+                    if (self.type == "grassy") {
+                        return gfx.props.misc.grassyBreakFloor;
+                    } else if (self.type == "brick") {
+                        return gfx.props.misc.brickBreakFloor;
+                    } else if (self.type == "mushroom") {
+                        return gfx.props.misc.mushroomBreakFloor;
+                    }
+                } else {
+                    const frames = gfx.props.misc.breakFloorHit;
+                    const fi = Math.min(
+                        frames.length - 1,
+                        Math.floor(
+                            (self._breakTimer / MBreakWall.BREAK_DURATION) *
+                                frames.length,
+                        ),
+                    );
+                    return frames[fi];
+                }
+            });
+
+            this._breaking = false;
+            this._breakTimer = 0;
+            this.type = type;
+        }
+
+        // Called by player when groundpounding
+        onGroundPound() {
+            if (this._breaking == false) {
+                this._breaking = true;
+                this._breakTimer = 0;
+            }
+            return true;
+        }
+
+        tick(dt) {
+            if (!this._breaking) return;
+            this._breakTimer += dt;
+            if (this._breakTimer >= MPoundFloor.BREAK_DURATION) {
+                const room = this.room;
+                if (!room) return;
+                const i = room.entities.indexOf(this);
+                if (i !== -1) room.entities.splice(i, 1);
+            }
+        }
+    }
+
     class MBreakWall extends MSolid {
         static BREAK_DURATION = 0.4;
 
@@ -4393,6 +4446,7 @@ const {
         MGauntletDoor,
         MNPC,
         MBlob,
+        MPoundFloor,
         MBreakWall,
         MMinitaur,
         MMimic,
