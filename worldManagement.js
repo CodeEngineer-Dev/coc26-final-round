@@ -1201,7 +1201,7 @@ const roomTemplates = {
             "B                                 B",
             "B                                 B",
             "B          F                      B",
-            "                                  B",
+            "                                   ",
             "                                  ",
             "                                   ",
             "[                                 ]",
@@ -1209,7 +1209,7 @@ const roomTemplates = {
         ],
         entities: {
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
-            "]": (x, y) => new MGauntletDoor(x, y - 2, "right"),
+            "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
             "N": (x, y) => new MPothead(x, y),
             'F': (x, y) => new MFlyer(x, y),
         },
