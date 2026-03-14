@@ -3597,6 +3597,12 @@ const {
             this.deAggroRange = 26;
         }
 
+        die() {
+            if (this.dead) return;
+            super.die();
+            this.stateTime = 0;
+        }
+
         ai(dt) {}
 
         tick(dt) {
@@ -3609,6 +3615,7 @@ const {
                 return;
             }
             if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            if (this._hitFlash > 0) this._hitFlash -= dt;
             this.stateTime += dt;
 
             const player = this.engine?.player;
@@ -3771,14 +3778,26 @@ const {
             this._homeY = y + 0.5;
         }
 
+        die() {
+            if (this.dead) return;
+            super.die();
+            //restart so die animation plays from frame 0
+            this.stateTime = 0; 
+        }
+
         ai(dt) {}
 
         tick(dt) {
             if (this.dead) {
                 this.stateTime += dt;
+                this._deathTimer += dt;
+                super.tick(dt, {}, { hvel: 0 });
+                const dieDuration = gfx.enemies.wingShroom.die.length / 8;
+                if (this.stateTime >= dieDuration) this.remove();
                 return;
             }
             if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            if (this._hitFlash > 0) this._hitFlash -= dt;
             this.stateTime += dt;
 
             const player = this.engine?.player;
