@@ -933,7 +933,15 @@ const {
          * @returns {void}
          */
         render(ctx, camera, t, pixel) {
+            //so the hat can bob essentially
+            const _spr = this.texturer(t, this);
+            const _offsetY = (this.h * camera.tsz - _spr.h * pixel) / 2;
+            this._hatY = camera.worldToScreen(this.x, this.y).y + _offsetY;
+    
             super.render(ctx, camera, t, pixel);
+    
+            this.engine?.onRenderHat?.(ctx, this, pixel, camera);
+    
             if (this.ball?.room == this.room)
                 this.ball?.render?.(ctx, camera, t, pixel);
             if (this.dragging) {

@@ -228,19 +228,145 @@
         };
 
         //render the hats
+        /* 
+            Okay, so this is very complicated, essentially the idea is to figure out where the top of the players head is
+            The fastest way is just to do this manually, so here is Arrow showing his work
+
+            A quick explanation:
+            idle:frame 0: '-----.......----' at row 1
+            idle:1: '-----.......----' 2
+            idle:2: '-----.......----' 2
+
+            The rest are abbreviated:
+            run:frame 0: 1
+            run:1: 2
+            run:2: 1
+            run:3: 2
+
+            jump:frame 0: 1
+            jump:1: 0
+            jump:2: 0
+
+            fall:0: 0
+            fall:1: 1
+            fall:2: 2
+
+            groundpound frame 0: 0
+            groundpound frames 1-4: 1
+
+            groundpoundimpact: 1,1,1,1
+
+            wallslide: 1
+
+            throw:frame 0: 2
+            throw:frames 1,1,1,1
+
+            carryidle:frames 0-2: 2,2,2
+
+            carryrun: frames 0-3: 2,2,2,2,
+
+            carryjump:frame 0: 2
+            carryjump:1: 2
+            carryjump:2: 3
+
+            carryfall:frame 0: 3
+            carryfall:frames 1-2: 2,2,
+
+            So we get
+                idle: [1, 2, 2],
+                run: [1, 2, 1, 2],
+                jump: [1, 0, 0],
+                fall: [0, 1, 2],
+                groundpound: [0, 1, 1, 1, 1],
+                groundpoundimpact: [1, 1, 1, 1],
+                wallslide: [1],
+                throw: [2, 1, 1, 1, 1],
+                carryidle: [2, 2, 2],
+                carryrun: [2, 2, 2, 2],
+                carryjump: [2, 2, 3],
+                carryfall: [3, 2, 2],
+        */
         function renderPlayerHat(ctx, player, pixel, camera) {
             if (!player.equippedHat) return;
             const hatSprite = gfx.player.hats[player.equippedHat];
             if (!hatSprite) return;
-
-            //hat on top of player
-            const { x, y } = camera.worldToScreen(player.x + player.w / 2, player.y);
+ 
+            //perframe head-top row inside the sprite bitmap
+            const HEAD_TOP_ROW = {
+                idle: [1, 2, 2],
+                run: [1, 2, 1, 2],
+                jump: [1, 0, 0],
+                fall: [0, 1, 2],
+                groundpound: [0, 1, 1, 1, 1],
+                groundpoundimpact: [1, 1, 1, 1],
+                wallslide: [1],
+                throw: [2, 1, 1, 1, 1],
+                carryidle: [2, 2, 2],
+                carryrun: [2, 2, 2, 2],
+                carryjump: [2, 2, 3],
+                carryfall: [3, 2, 2],
+            };
+ 
+            //mirror the texturer's sprite-state selection
+            const state = player.state ?? 'idle';
+            const holding = player.ball &&
+                (player.engine.slowMo || player.dragging || player.carrying);
+            const carryMap = {
+                idle: 'carryidle', run: 'carryrun',
+                jump: 'carryjump', fall: 'carryfall',
+            };
+            const spriteState = (holding && carryMap[state]) ? carryMap[state] : state;
+ 
+            //mirror the texturer's frame-index calculation
+            const rows = HEAD_TOP_ROW[spriteState] ?? HEAD_TOP_ROW.idle;
+            const fps = ANIM_FPS[state] ?? 6;
+            const count = rows.length;
+            let frame = 0;
+ 
+            switch (state) {
+                case 'jump':
+                case 'fall':
+                    frame = Math.min(count - 1,
+                        Math.floor((player.airTime ?? 0) * fps));
+                    break;
+                case 'groundpound':
+                    frame = 0;
+                    break;
+                case 'groundpoundimpact':
+                    frame = Math.min(count - 1,
+                        Math.floor((player.impactTime ?? 0) * fps));
+                    break;
+                case 'throw': {
+                    const dx = player.dragX - player.dragInitX;
+                    const dy = player.dragY - player.dragInitY;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    frame = Math.floor(
+                        Math.min(len / player.maxDrag, 1) * (count - 1));
+                    break;
+                }
+                case 'wallslide':
+                    frame = 0;
+                    break;
+                default:
+                    frame = Math.floor(t * fps) % count;
+            }
+            frame = Math.max(0, Math.min(count - 1, frame));
+ 
+            const headTopRow = rows[frame];
+ 
+            const baseY = player._hatY ??
+                camera.worldToScreen(player.x, player.y).y;
+ 
+            const { x } = camera.worldToScreen(player.x + player.w / 2, player.y);
             const hw = hatSprite.w * pixel;
             const hh = hatSprite.h * pixel;
-
+            const hatDrawY = baseY + headTopRow * pixel - hh + pixel;
+ 
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-            hatSprite.draw(ctx, x - hw / 2, y - hh + pixel * 2, pixel, player.facing ?? 1);
+            //since I am not perfect I have to realign at the end
+            const hatDrawX = x - hw / 2 - (player.facing === -1 ? pixel : 0);
+            hatSprite.draw(ctx, hatDrawX, hatDrawY, pixel, player.facing ?? 1);
             ctx.restore();
         }
 
@@ -328,6 +454,8 @@
             frame = Math.max(0, Math.min(count - 1, frame));
             return frames[frame];
         });
+
+        engine.onRenderHat = (ctx, player, pixel, camera) => renderPlayerHat(ctx, player, pixel, camera);
 
         engine._collectAnims = [];
         engine._hudFlash = {};
@@ -822,8 +950,8 @@
                 ctx.translate(shake.x, shake.y);
                 engine.tick(t, dt, events);
 
-                //hats
-                renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
+                //hats - nevermore
+                //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
 
                 //crazy Arrow idea lol
                 if (engine.slowMo) {
