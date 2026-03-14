@@ -1190,6 +1190,7 @@ const roomTemplates = {
     },
     λ: {
         bitmap: [
+            
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
             "B                                 B",
             "B                                 B",
@@ -1199,8 +1200,18 @@ const roomTemplates = {
             "B                                 B",
             "B                                 B",
             "B                                 B",
-            "B          BBBBBBBBBBBBBBBBBBBBBBBB",
-            "B          B                      B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B                                 B",
+            "B          BBBB     BBBBBBBBB     B",
+            "B         BBBBBBBBBBBBBBBBBBBBBBBBB",
+            "B         BBB                     B",
             "      P                            ",
             "                     F            ",
             "                                   ",

@@ -2190,28 +2190,27 @@ const {
 
         constructor(x, y, roomSide) {
             super(x, y, 1, 3, (t, self) => {
-                const closeFrames = gfx.props.misc.gauntletDoorClose;
-                const openFrames = gfx.props.misc.gauntletDoorOpen;
+                const closingFrames = gfx.props.misc.gauntletDoorOpen;
+                const openingFrames = gfx.props.misc.gauntletDoorClose;
 
                 if (self._state === "open") {
-                    return openFrames[openFrames.length - 1];
+                    return openingFrames[openingFrames.length - 1];
                 }
                 if (self._state === "opening") {
                     const fi = Math.min(
-                        openFrames.length - 1,
+                        openingFrames.length - 1,
                         Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS),
                     );
-                    return openFrames[fi];
+                    return openingFrames[fi];
                 }
                 if (self._state === "closing") {
                     const fi = Math.min(
-                        closeFrames.length - 1,
+                        closingFrames.length - 1,
                         Math.floor(self._stateTimer * MGauntletDoor.ANIM_FPS),
                     );
-                    return closeFrames[fi];
+                    return closingFrames[fi];
                 }
-                //closed
-                return closeFrames[closeFrames.length - 1];
+                return closingFrames[closingFrames.length - 1];
             });
 
             this._state = "open";
@@ -2312,7 +2311,7 @@ const {
                 case "opening": {
                     this._stateTimer += dt;
                     if (this._stateTimer >= MGauntletDoor.ANIM_DURATION) {
-                        this._state == "open";
+                        this._state = "open";
                         this._stateTimer = 0;
                         this.completed = true;
                     }
