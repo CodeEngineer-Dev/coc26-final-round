@@ -2787,9 +2787,9 @@ const {
             this._breaking = false;
             this._breakTimer = 0;
             this.type = type;
+            this.tempBox = MBox.fromWH(0, 0, 0, 0)
         }
 
-        // Called by player when groundpounding
         onGroundPound() {
             if (this._breaking == false) {
                 this._breaking = true;
@@ -2799,13 +2799,23 @@ const {
         }
 
         tick(dt) {
-            if (!this._breaking) return;
-            this._breakTimer += dt;
-            if (this._breakTimer >= MPoundFloor.BREAK_DURATION) {
-                const room = this.room;
-                if (!room) return;
-                const i = room.entities.indexOf(this);
-                if (i !== -1) room.entities.splice(i, 1);
+            
+            if (!this._breaking) {
+                let player = this.engine?.player;
+
+                this.tempBox.setWH(player.x, player.y, player.w, player.h + 0.5);
+
+                if (player && player.room == this.room && player.state == "groundpound" && this.hbox.collision(this.tempBox)) {
+                    this.onGroundPound();
+                }
+            } else {
+                this._breakTimer += dt;
+                if (this._breakTimer >= MPoundFloor.BREAK_DURATION) {
+                    const room = this.room;
+                    if (!room) return;
+                    const i = room.entities.indexOf(this);
+                    if (i !== -1) room.entities.splice(i, 1);
+                }
             }
         }
     }
