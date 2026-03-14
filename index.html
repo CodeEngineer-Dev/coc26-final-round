@@ -232,15 +232,23 @@
             if (!player.equippedHat) return;
             const hatSprite = gfx.player.hats[player.equippedHat];
             if (!hatSprite) return;
-
-            //hat on top of player
-            const { x, y } = camera.worldToScreen(player.x + player.w / 2, player.y);
+ 
+            const { x } = camera.worldToScreen(player.x + player.w / 2, player.y);
             const hw = hatSprite.w * pixel;
             const hh = hatSprite.h * pixel;
-
+            const baseY = player._hatY ?? camera.worldToScreen(player.x, player.y).y;
+            let bob = 0;
+            const state = player.state ?? 'idle';
+            if (state === 'run') {
+                const frame = Math.floor(t * 8) % 2;
+                bob = frame === 1 ? pixel : 0;
+            } else if (state === 'idle') {
+                const frame = Math.floor(t * 4) % 4;
+                bob = frame === 3 ? pixel : 0;
+            }
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-            hatSprite.draw(ctx, x - hw / 2, y - hh + pixel * 2, pixel, player.facing ?? 1);
+            hatSprite.draw(ctx, x - hw / 2, baseY - hh + pixel + bob, pixel, player.facing ?? 1);
             ctx.restore();
         }
 
@@ -328,6 +336,8 @@
             frame = Math.max(0, Math.min(count - 1, frame));
             return frames[frame];
         });
+
+        engine.onRenderHat = (ctx, player, pixel, camera) => renderPlayerHat(ctx, player, pixel, camera);
 
         engine._collectAnims = [];
         engine._hudFlash = {};
@@ -822,8 +832,8 @@
                 ctx.translate(shake.x, shake.y);
                 engine.tick(t, dt, events);
 
-                //hats
-                renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
+                //hats - nevermore
+                //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
 
                 //crazy Arrow idea lol
                 if (engine.slowMo) {
