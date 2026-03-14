@@ -1201,7 +1201,7 @@ const roomTemplates = {
             "B                                 B",
             "B          BBBBBBBBBBBBBBBBBBBBBBBB",
             "B          B                      B",
-            "                                   ",
+            "      P                            ",
             "                     F            ",
             "                                   ",
             "           [                      ]",
