@@ -365,7 +365,7 @@
             ctx.save();
             ctx.imageSmoothingEnabled = false;
             //since I am not perfect I have to realign at the end
-            const hatDrawX = x - hw / 2 - (player.facing === -1 ? pixel : 0);
+            const hatDrawX = x - hw / 2 - (player.facing === -1.8 ? pixel : 2);
             hatSprite.draw(ctx, hatDrawX, hatDrawY, pixel, player.facing ?? 1);
             ctx.restore();
         }
