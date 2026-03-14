@@ -866,7 +866,8 @@ const {
             if (this.ball && this.carrying) {
                 this.ball.xv = 0;
                 this.ball.yv = 0;
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
                 this.ball.y = this.y - 0.55;
                 this.ball.room = this.room;
                 this.ball.updateHitbox();
@@ -3451,7 +3452,10 @@ const {
             if (this.ball && this.carrying) {
                 this.ball.xv = 0;
                 this.ball.yv = 0;
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this is what happens when you just copy my code xyzyyxx
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + this.facing * 0.000000003;
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
                 this.ball.y = this.y - 0.55;
                 this.ball.room = this.room;
                 this.ball.updateHitbox();
