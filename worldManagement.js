@@ -1189,6 +1189,7 @@ const roomTemplates = {
         },
     },
     λ: {
+        background: 'forest', 
         bitmap: [
             
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",

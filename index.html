@@ -948,6 +948,28 @@
             } else {
                 ctx.save();
                 ctx.translate(shake.x, shake.y);
+
+
+                const player = engine.player;
+                const room = player?.room;
+                const roomKey = worldAssembly[room?.row]?.[room?.col];
+                const roomDef = roomTemplates[roomKey];
+                if (roomDef?.background) {
+                    const bgSprite = gfx.props.backdrops[roomDef.background];
+                    if (bgSprite) {
+                        const camera = engine.renderer.camera;
+                        const { x, y } = camera.worldToScreen(0, 0);
+                        const scaleX = (room.width * camera.tsz) / bgSprite.w;
+                        const scaleY = (room.height * camera.tsz) / bgSprite.h;
+                        ctx.save();
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.translate(x, y);
+                        ctx.scale(scaleX, scaleY);
+                        bgSprite.draw(ctx, 0, 0, 1);
+                        ctx.restore();
+                    }
+                }
+
                 engine.tick(t, dt, events);
 
                 //hats - nevermore

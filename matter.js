@@ -21,7 +21,8 @@ const {
     MSwarmer,
     MPothead,
     MHatPoint,
-    MHatShop
+    MHatShop,
+    MBackground
 } = (() => {
     /** MBox: an AABB hitbox implementation.
      *
@@ -4347,6 +4348,35 @@ const {
         }
     }
 
+    class MBackground {
+        constructor(spriteKey) {
+            this.spriteKey = spriteKey;
+            this._sprite = null;
+        }
+
+        _getSprite() {
+            if (!this._sprite) {
+                this._sprite = gfx.props.backdrops[this.spriteKey];
+            }
+            return this._sprite;
+        }
+
+        render(ctx, camera, room) {
+            const sprite = this._getSprite();
+            if (!sprite) return;
+
+            const { x, y } = camera.worldToScreen(0, 0);
+            const scaleX = (room.width * camera.tsz) / sprite[0].length;
+            const scaleY = (room.height * camera.tsz) / sprite.length;
+
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.translate(x, y);
+            ctx.scale(scaleX, scaleY);
+            sprite.draw?.(ctx, 0, 0, 1);
+            ctx.restore();
+        }
+    }
 
     return {
         MDecorative,
@@ -4371,6 +4401,7 @@ const {
         MSwarmer,
         MPothead,
         MHatPoint,
-        MHatShop
+        MHatShop,
+        MBackground
     };
 })();

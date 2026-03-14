@@ -8523,3 +8523,8 @@ gfx.player.groundpoundimpact = {
 };
 
 gfx.empty = new SpriteRef(spritesheet.canvas, 0, 0, 0, 0);
+
+//store backgrounds
+for (const key in gfxData.props.backdrops) {
+    gfx.props.backdrops[key] = spritesheet.store(palette, [gfxData.props.backdrops[key]])[0];
+}
