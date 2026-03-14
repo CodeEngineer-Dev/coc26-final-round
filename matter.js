@@ -23,7 +23,8 @@ const {
     MPothead,
     MHatPoint,
     MHatShop,
-    MBackground
+    MBackground,
+    MPacman,
 } = (() => {
     /** MBox: an AABB hitbox implementation.
      *
@@ -2268,6 +2269,16 @@ const {
                 return;
             }
 
+            if (this.room !== player.room) {
+                if (this._state !== "open") {
+                    this._state = "open";
+                    this._stateTimer = 0;
+                    this._gauntletStarted = false;
+                    this._updateSolidity();
+                }
+                return;
+            }
+
             //only run logic when the player is actually in this room.
             if (this.room !== player.room) return;
 
@@ -4431,6 +4442,507 @@ const {
         }
     }
 
+    /**
+     * MPacman
+     */
+    class MPacman extends MEnemy {
+
+        //tune any of this if you want
+        static deathAnimationTime = 3.0;
+        static BOUNCE = 0.68;
+        static AIR_ACCEL = 12;
+        static MAX_SPEED = 10;
+        static DIVE_SPEED = 34;
+        static PREDICT_TIME = 2.2;
+        static PREDICT_THRESH = 4.0;
+        static CHOMP_PAUSE = 0.12;
+        static LICK_DURATION = 2.8;
+        static DIVE_COOLDOWN = 2.0;
+        static JUMP_MULT = 1.35;
+        static JUMP_CD_MIN = 0.6;
+        static JUMP_CD_MAX = 1.3;
+        static CHARGE_CD_MIN= 2.5;
+        static CHARGE_CD_MAX = 4.5;
+        static CHARGE_AIR_DELAY = 0.35;
+
+        //construct it
+        constructor(x, y) {
+            const W = 8, H = 8;
+
+            super(x, y, W, H, 600, (t, self) => {
+                if (self._hitFlash > 0) return gfx.enemies.bosses.landlord.idle[0];
+
+                switch (self._pstate) {
+                    //sluuurrrrrpppppppppp
+                    case 'licking': {
+                        const frames = gfx.enemies.bosses.landlord.lick;
+                        const fi = Math.min(
+                            frames.length - 1,
+                            Math.floor(
+                                (self._lickTimer / MPacman.LICK_DURATION) * frames.length,
+                            ),
+                        );
+                        return frames[fi];
+                    }
+                    case 'chomping':
+                    case 'diving': {
+                        const frames = gfx.enemies.bosses.landlord.nomnom;
+                        return frames[Math.floor(t * 12) % frames.length];
+                    }
+                    default: {
+                        const frames = gfx.enemies.bosses.landlord.idle;
+                        return frames[Math.floor(t * 2) % frames.length];
+                    }
+                }
+            });
+
+            //im rolling rn
+            this._pstate = 'rolling';
+
+            this._angle = 0;
+            this._lickTimer = 0;
+            this._chompTimer = 0;
+            this._diveCooldown = 0;
+            this._jumpCooldown = 0.4 + Math.random() * 0.4;
+            this._chargeCooldown = MPacman.CHARGE_CD_MIN + Math.random() * (MPacman.CHARGE_CD_MAX - MPacman.CHARGE_CD_MIN);
+            this._chargingDive = false;
+            this._chargeAirTimer = 0;
+            this._wasGrounded= false;
+            this.contactCooldown = 0;
+
+            
+            this._origRenderPlayer = null;
+            this._prevPlayerHealth = null;
+
+            this.xv = (Math.random() < 0.5 ? 1 : -1) * 5;
+            this.yv = -4;
+        }
+
+        //supress parent ai
+        ai(_dt) {}
+
+        //tick tock
+        tick(dt) {
+            const player  = this.engine?.player;
+            const renderer = this.engine?.renderer;
+            if (this._origRenderPlayer && renderer) {
+                renderer.renderPlayer = this._origRenderPlayer;
+                this._origRenderPlayer = null;
+            }
+
+            if (this.dead) {
+                this._deathTimer += dt;
+                if (this._deathTimer > MPacman.deathAnimationTime) this.remove();
+                return;
+            }
+
+            if (this._hitFlash > 0) this._hitFlash -= dt;
+            if (this._diveCooldown > 0) this._diveCooldown -= dt;
+            if (this.contactCooldown > 0) this.contactCooldown -= dt;
+            if (player && (this._pstate === 'chomping' || this._pstate === 'licking')) {
+                if (player.room !== this.room) player.room = this.room;
+            }
+            if (player?.room !== this.room) return;
+            if (
+                this._prevPlayerHealth !== null &&
+                this._prevPlayerHealth < player.maxHealth &&
+                player.health >= player.maxHealth
+            ) {
+                this.health = this.maxHealth;
+                this._hitFlash = 0;
+                if (this._pstate === 'chomping' || this._pstate === 'licking') {
+                    this._pstate = 'rolling';
+                    this._diveCooldown = MPacman.DIVE_COOLDOWN;
+                    this._chargingDive = false;
+                    this._jumpCooldown = 0.5;
+                }
+            }
+            this._prevPlayerHealth = player.health;
+
+            const world = this.engine.world;
+
+            switch (this._pstate) {
+                case 'rolling':  this._tickRolling(dt, player, world);  break;
+                case 'diving':   this._tickDiving(dt, player, world);   break;
+                case 'chomping': this._tickChomping(dt, player, world); break;
+                case 'licking':  this._tickLicking(dt, player, world);  break;
+            }
+
+            this._angle += (this.xv / (this.w * 0.5)) * dt;
+            if (this.xv >  0.5) this.facing =  1;
+            else if (this.xv < -0.5) this.facing = -1;
+        }
+
+        //rolling rn
+        _tickRolling(dt, player, world) {
+            const g = this.engine.gravity;
+
+            if (this.grounded) {
+                this._chargingDive= false;
+                this._chargeAirTimer = 0;
+                this._chargeCooldown -= dt;
+                this._jumpCooldown -= dt;
+
+                if (this._chargeCooldown <= 0) {
+                    this._doChargeJump(player);
+                } else if (this._jumpCooldown <= 0) {
+                    this._doJump(player);
+                }
+            }
+
+            if (this._diveCooldown <= 0 && !this._chargingDive && this._checkDive(player)) {
+                this._launchDive(player);
+                return;
+            }
+
+            if (this._chargingDive && !this.grounded) {
+                this._chargeAirTimer += dt;
+                if (this._chargeAirTimer >= MPacman.CHARGE_AIR_DELAY && this._diveCooldown <= 0) {
+                    this._chargingDive = false;
+                    this._launchDive(player);
+                    return;
+                }
+            }
+
+            if (!this.grounded) {
+                const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+                this.xv += Math.sign(dx) * MPacman.AIR_ACCEL * dt;
+                this.xv = Math.max(-MPacman.MAX_SPEED, Math.min(MPacman.MAX_SPEED, this.xv));
+            }
+
+            //horizontal and wall bounce.
+            this.x += this.xv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, world)) {
+                this.x -= this.xv * dt;
+                this.xv *= -MPacman.BOUNCE;
+                if (Math.abs(this.yv) < 4) {
+                    this.yv = -(this.engine.jump * MPacman.JUMP_MULT * (0.6 + Math.random() * 0.4));
+                    this.grounded = false;
+                }
+                this.transport();
+                this.updateHitbox();
+            }
+
+            //vertical and floor/ceiling bounce.
+            this._wasGrounded = this.grounded;
+            this.grounded = false;
+
+            this.yv += g * dt;
+            this.y += this.yv * dt;
+            this.transport();
+            this.updateHitbox();
+
+            if (this.touching(MSolid, world)) {
+                this.y -= this.yv * dt;
+                if (this.yv > 0) {
+                    this.grounded = true;
+                    if (!this._wasGrounded) this._onLand();
+                    this.yv = Math.abs(this.yv) < 2 ? 0 : -this.yv * MPacman.BOUNCE;
+                } else {
+                    this.yv *= -MPacman.BOUNCE;
+                }
+                this.transport();
+                this.updateHitbox();
+            }
+
+            this._separateFromPlayer(player, world);
+            this._checkPlayerContact(player);
+        }
+
+        //dive
+        _tickDiving(dt, player, world) {
+            this.yv += this.engine.gravity * 0.1 * dt;
+
+            this.x += this.xv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, world)) {
+                this.x -= this.xv * dt;
+                this.xv *= -MPacman.BOUNCE;
+                this._endDive();
+                this.transport();
+                this.updateHitbox();
+                return;
+            }
+
+            this._wasGrounded = this.grounded;
+            this.grounded = false;
+
+            this.y += this.yv * dt;
+            this.transport();
+            this.updateHitbox();
+            if (this.touching(MSolid, world)) {
+                this.y -= this.yv * dt;
+                if (this.yv > 0) {
+                    this.grounded = true;
+                    if (!this._wasGrounded) this._onLand();
+                }
+                this.yv *= -MPacman.BOUNCE;
+                this._endDive();
+                this.transport();
+                this.updateHitbox();
+                return;
+            }
+
+            player.updateHitbox();
+            this.updateHitbox();
+            if (this.hbox.collision(player.hbox)) {
+                this._startChomp(player);
+            }
+        }
+
+        //nom nom chomp chomp
+        _tickChomping(dt, player, world) {
+            this._chompTimer += dt;
+            this.xv = 0;
+            //boss still falls under gravityit shouldn't hang in mid-air.
+            this._applyGravityAndFloor(dt, world);
+            //pin player to boss centre after gravity has moved us.
+            this._placePlayerInMouth(player);
+
+            if (this._chompTimer >= MPacman.CHOMP_PAUSE) {
+                this._pstate    = 'licking';
+                this._lickTimer = 0;
+            }
+        }
+
+        ///sluuuuuurrrrrrrrpppppppp
+        _tickLicking(dt, player, world) {
+            this._lickTimer += dt;
+            this.xv = 0;
+            this._applyGravityAndFloor(dt, world);
+            this._placePlayerInMouth(player);
+
+            if (this._lickTimer >= MPacman.LICK_DURATION) {
+                this._pstate         = 'rolling';
+                this._diveCooldown   = MPacman.DIVE_COOLDOWN;
+                this._chargeCooldown = 1.0;
+                this._jumpCooldown   = 0.3;
+                player.health = 0;
+            }
+        }
+        /**
+         * Vertical-only physics used during eating so the boss falls and lands
+         * normally without any horizontal sliding.
+         */
+        _applyGravityAndFloor(dt, world) {
+            this._wasGrounded = this.grounded;
+            this.grounded = false;
+
+            this.yv += this.engine.gravity * dt;
+            this.y  += this.yv * dt;
+            this.transport();
+            this.updateHitbox();
+
+            if (this.touching(MSolid, world)) {
+                this.y -= this.yv * dt;
+                if (this.yv > 0) {
+                    this.grounded = true;
+                    if (!this._wasGrounded) this._onLand();
+                    this.yv = 0;
+                } else {
+                    this.yv *= -MPacman.BOUNCE;
+                }
+                this.transport();
+                this.updateHitbox();
+            }
+        }
+        /**
+         * Locks the player to the boss's centre.
+         * Also keeps player.room === this.room so renderScene iterates the correct
+         * room and boss.render() always runs (which is what installs the no-op).
+         */
+        _placePlayerInMouth(player) {
+            player.xv = 0;
+            player.yv = 0;
+            player.x  = this.x + this.w / 2 - player.w / 2;
+            player.y  = this.y + this.h / 2 - player.h / 2;
+            if (player.room !== this.room) player.room = this.room;
+            player.updateHitbox();
+            if (player.health < 1) player.health = 1;
+        }
+
+        _doJump(player) {
+            const dx      = player.x + player.w / 2 - (this.x + this.w / 2);
+            const targetX = Math.sign(dx) * MPacman.MAX_SPEED;
+            this.xv = this.xv * 0.4 + targetX * 0.6;
+            this.yv = -(this.engine.jump * MPacman.JUMP_MULT);
+            this.grounded = false;
+            this._jumpCooldown = MPacman.JUMP_CD_MIN +Math.random() * (MPacman.JUMP_CD_MAX - MPacman.JUMP_CD_MIN);
+        }
+
+        _doChargeJump(player) {
+            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+            this.xv = Math.sign(dx) * MPacman.MAX_SPEED * 1.1;
+            this.yv = -(this.engine.jump * MPacman.JUMP_MULT * 1.15);
+            this.grounded = false;
+            this._chargingDive = true;
+            this._chargeAirTimer = 0;
+            this._jumpCooldown = MPacman.JUMP_CD_MIN +Math.random() * (MPacman.JUMP_CD_MAX - MPacman.JUMP_CD_MIN);
+            this._chargeCooldown = MPacman.CHARGE_CD_MIN +Math.random() * (MPacman.CHARGE_CD_MAX - MPacman.CHARGE_CD_MIN);
+        }
+
+        _onLand() {
+            this.engine.onGroundPound?.();
+            this.engine.onGroundPound?.();
+            this.engine.onGroundPound?.();
+        }
+
+        _checkDive(player) {
+            if (Math.abs(this.xv) < 2) return false;
+            const myX = this.x + this.w / 2, myY = this.y + this.h / 2;
+            const px  = player.x + player.w / 2, py = player.y + player.h / 2;
+            const dx  = px - myX;
+            if (Math.sign(this.xv) !== Math.sign(dx)) return false;
+            const t = dx / this.xv;
+            if (t < 0.15 || t > MPacman.PREDICT_TIME) return false;
+            const predY = myY + this.yv * t + 0.5 * this.engine.gravity * t * t;
+            return Math.abs(predY - py) <= MPacman.PREDICT_THRESH;
+        }
+
+        _launchDive(player) {
+            this._pstate = 'diving';
+            const myX = this.x + this.w / 2, myY = this.y + this.h / 2;
+            const px  = player.x + player.w / 2, py = player.y + player.h / 2;
+            const len = Math.hypot(px - myX, py - myY) || 1;
+            this.xv = ((px - myX) / len) * MPacman.DIVE_SPEED;
+            this.yv = ((py - myY) / len) * MPacman.DIVE_SPEED;
+        }
+
+        _endDive() {
+            this._pstate = 'rolling';
+            this._diveCooldown = MPacman.DIVE_COOLDOWN;
+            this._chargingDive = false;
+            this._chargeAirTimer = 0;
+        }
+
+        _startChomp(player) {
+            this._pstate = 'chomping';
+            this._chompTimer = 0;
+            player.health = 1;
+            player._hitFlash = 0.9;
+            this._onLand();
+        }
+
+        _separateFromPlayer(player, world) {
+            if (!player || player.room !== this.room || player.dead) return;
+
+            const overlapX = (player.x + player.w / 2) - (this.x + this.w / 2);
+            const overlapY = (player.y + player.h / 2) - (this.y + this.h / 2);
+            const minDistX = (player.w + this.w) / 2;
+            const minDistY = (player.h + this.h) / 2;
+            const absX = Math.abs(overlapX);
+            const absY = Math.abs(overlapY);
+
+            if (absX >= minDistX || absY >= minDistY) return;
+
+            if (minDistX - absX < minDistY - absY) {
+                const push  = minDistX - absX;
+                const prevX = player.x;
+                player.x   += overlapX > 0 ? push : -push;
+                player.updateHitbox();
+                if (player.touching(MSolid, world)) {
+                    player.x = prevX;
+                    player.updateHitbox();
+                    this.x  -= overlapX > 0 ? push : -push;
+                    this.xv *= -0.5;
+                    this.updateHitbox();
+                }
+            } else {
+                const push = minDistY - absY;
+                if (overlapY < 0) {
+                    const prevY = player.y;
+                    player.y -= push;
+                    player.yv = Math.min(player.yv, 0);
+                    player.grounded = true;
+                    player.updateHitbox();
+                    if (player.touching(MSolid, world)) {
+                        player.y = prevY;
+                        player.updateHitbox();
+                    }
+                } else {
+                    const prevY = player.y;
+                    player.y+= push;
+                    player.updateHitbox();
+                    if (player.touching(MSolid, world)) {
+                        player.y = prevY;
+                        player.updateHitbox();
+                    }
+                }
+            }
+        }
+
+        _checkPlayerContact(player) {
+            if (!player || player.room !== this.room || this.contactCooldown > 0) return;
+            player.updateHitbox();
+            this.updateHitbox();
+            if (!this.hbox.collision(player.hbox)) return;
+
+            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+            player.xv = Math.sign(dx || 1) * 22;
+            player.yv = -16;
+            player.takeDamage(30);
+            this.contactCooldown = 0.7;
+        }
+
+        //dammage and death
+        takeDamage(amount) {
+            if (this.dead) return;
+            this._hitFlash = 0.15;
+            this.health   -= amount;
+            if (this.health <= 0) this.die();
+        }
+
+        
+        render(ctx, camera, t, pixel) {
+            if (!camera.inView(this)) return;
+
+            const { x: sx, y: sy } = camera.worldToScreen(this.x, this.y);
+            const bw = this.w * camera.tsz;
+            const bh = this.h * camera.tsz;
+            const cx = sx + bw / 2;
+            const cy = sy + bh / 2;
+            const radius = bw / 2;
+
+            ctx.save();
+            this.deathAlpha(ctx);
+
+            if (this._hitFlash > 0) {
+                ctx.globalAlpha *= 0.3 + Math.abs(Math.sin(this._hitFlash * 35)) * 0.7;
+            }
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.clip();
+
+            const sprite = this.texturer(t, this);
+            const sw = sprite.w * pixel;
+            const sh = sprite.h * pixel;
+
+            ctx.translate(cx, cy);
+            if (this._pstate === 'rolling') ctx.rotate(this._angle);
+            sprite.draw(ctx, -sw / 2, -sh / 2, pixel, this.facing ?? 1);
+            if (this._pstate === 'chomping' || this._pstate === 'licking') {
+                const player = this.engine?.player;
+                if (player) {
+                    const pSprite = player.texturer(t, player);
+                    const psw = pSprite.w * pixel;
+                    const psh = pSprite.h * pixel;
+                    pSprite.draw(ctx, -psw / 2, -psh / 2 + pixel * 2, pixel, player.facing ?? 1);
+                    const renderer = this.engine.renderer;
+                    if (renderer && !this._origRenderPlayer) {
+                        this._origRenderPlayer = renderer.renderPlayer.bind(renderer);
+                    }
+                    if (renderer) renderer.renderPlayer = () => {};
+                }
+            }
+
+            ctx.restore();
+        }
+    }
+
     return {
         MDecorative,
         MSolid,
@@ -4456,6 +4968,7 @@ const {
         MPothead,
         MHatPoint,
         MHatShop,
-        MBackground
+        MBackground,
+        MPacman
     };
 })();
