@@ -21,6 +21,7 @@ const {
     MSwarmer,
     MPothead,
     MHatPoint,
+    MHatShop
 } = (() => {
     /** MBox: an AABB hitbox implementation.
      *
@@ -882,7 +883,8 @@ const {
             if (this.ball && this.carrying) {
                 this.ball.xv = 0;
                 this.ball.yv = 0;
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
                 this.ball.y = this.y - 0.55;
                 this.ball.room = this.room;
                 this.ball.updateHitbox();
@@ -3467,7 +3469,10 @@ const {
             if (this.ball && this.carrying) {
                 this.ball.xv = 0;
                 this.ball.yv = 0;
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                //this is what happens when you just copy my code xyzyyxx
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + this.facing * 0.000000003;
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
                 this.ball.y = this.y - 0.55;
                 this.ball.room = this.room;
                 this.ball.updateHitbox();
@@ -4080,6 +4085,181 @@ const {
         }
     }
 
+    class MHatShop extends MDecorative {
+        static TALK_RADIUS = 4;
+        static ANIM_FPS = 3;
+
+        static HATS = [
+            { 
+                key: 'topHat', 
+                name: 'Top Hat', 
+                cost: 3 
+            },
+            { 
+                key: 'bunnyEars', 
+                name: 'Bunny Ears',
+                cost: 5 
+            },
+            { 
+                key: 'unicornHorn', 
+                name: 'Unicorn Horn',  
+                cost: 8 
+            },
+        ];
+
+        constructor(x, y) {
+            super(x, y, 2, 3, () => gfx.props.misc.hatStand);
+
+            this.inRange = false;
+            this._open   = false;
+            this._lastStateKey = null;
+
+            const overlay = document.getElementById('overlay');
+
+            this._shopEl = document.createElement('div');
+            this._shopEl.className = 'hat-shop';
+            this._shopEl.style.display = 'none';
+            overlay.appendChild(this._shopEl);
+
+            //I don't feel like explaining this :):):):)
+            this._shopEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn || btn.disabled) return;
+                e.stopPropagation();
+
+                const action = btn.dataset.action;
+                const key = btn.dataset.key  ?? null;
+                const cost = parseInt(btn.dataset.cost ?? '0', 10);
+
+                const player = this.engine?.player;
+                if (!player) return;
+
+                if (!player._ownedHats) player._ownedHats = [];
+
+                if (action === 'buy') {
+                    const pts = this.engine.hatPoints ?? 0;
+                    if (pts < cost) return;
+                    this.engine.hatPoints = pts - cost;
+                    if (!player._ownedHats.includes(key)) player._ownedHats.push(key);
+                    player.equippedHat = key;
+                } else if (action === 'equip') {
+                    player.equippedHat = (player.equippedHat === key) ? null : key;
+                } else if (action === 'unequip') {
+                    player.equippedHat = null;
+                }
+
+                //(I can explain this tho) force an immediate HTML rebuild on next sync 
+                this._lastStateKey = null;
+                this._syncHTML();
+            });
+
+            this._prompt = document.createElement('div');
+            this._prompt.className = 'npc-prompt';
+            this._prompt.textContent = 'SPACE to browse hats';
+            this._prompt.style.display = 'none';
+            overlay.appendChild(this._prompt);
+        }
+
+        tick(dt) {
+            const player = this.engine?.player;
+            if (!player) return;
+
+            if (!player._ownedHats) player._ownedHats  = [];
+            if (!('equippedHat' in player))  player.equippedHat = null;
+
+            const { events, eventsPrev } = this.engine;
+            const spaceJust = !!events.Space && !eventsPrev.Space;
+
+            const cx = this.x + 1, cy = this.y + 1.5;
+            const px = player.x + player.w / 2, py = player.y + player.h / 2;
+            const dist = Math.hypot(px - cx, py - cy);
+            this.inRange = dist <= MHatShop.TALK_RADIUS && this.room === player.room;
+
+            if (!this.inRange) this._open = false;
+            if (this.inRange && spaceJust) this._open = !this._open;
+
+            this._syncHTML();
+        }
+
+        _syncHTML() {
+            if (!this.engine?.renderer) return;
+            const camera = this.engine.renderer.camera;
+            const player = this.engine.player;
+            const { x: sx, y: sy } = camera.worldToScreen(this.x + 1, this.y - 0.3);
+
+            if (this._open) {
+                this._prompt.style.display = 'none';
+
+                //always keep the box positioned under the camera
+                this._shopEl.style.left = `${sx}px`;
+                this._shopEl.style.top = `${sy}px`;
+                this._shopEl.style.display = 'block';
+
+                //only rebuild innerHTML when something meaningful changed
+                const pts = this.engine.hatPoints ?? 0;
+                const equipped = player.equippedHat ?? '';
+                const ownedStr = (player._ownedHats ?? []).slice().sort().join(',');
+                const stateKey = `${pts}|${equipped}|${ownedStr}`;
+
+                if (this._lastStateKey !== stateKey) {
+                    this._lastStateKey = stateKey;
+                    const owned = player._ownedHats ?? [];
+
+                    const rows = MHatShop.HATS.map(hat => {
+                        const isOwned = owned.includes(hat.key);
+                        const isEquipped = player.equippedHat === hat.key;
+                        const canAfford  = pts >= hat.cost;
+
+                        const btn = isOwned
+                            ? `<button class="hat-btn ${isEquipped ? 'hat-btn-equipped' : ''}"
+                                    data-action="equip" data-key="${hat.key}">
+                                ${isEquipped ? 'Equipped' : 'Equip'}
+                            </button>`
+                            : `<button class="hat-btn" ${canAfford ? '' : 'disabled'}
+                                    data-action="buy" data-key="${hat.key}" data-cost="${hat.cost}">
+                                Buy — ${hat.cost}
+                            </button>`;
+
+                        return `<div class="hat-row ${isEquipped ? 'hat-row-equipped' : ''}">
+                            <span class="hat-name">${hat.name}</span>${btn}
+                        </div>`;
+                    }).join('');
+
+                    const unequipRow = player.equippedHat
+                        ? `<div class="hat-row">
+                            <span class="hat-name"><i>none</i></span>
+                            <button class="hat-btn" data-action="unequip">Unequip</button>
+                        </div>`
+                        : '';
+
+                    this._shopEl.innerHTML = `
+                        <div class="hat-shop-title">Hat Shop</div>d d
+                        <div class="hat-shop-pts"> <b>${pts}</b> hat point${pts !== 1 ? 's' : ''}</div>
+                        <div class="hat-shop-list">${rows}${unequipRow}</div>
+                        <div class="hat-shop-hint">[SPACE] to close</div>
+                    `;
+                }
+
+            } else {
+                this._lastStateKey = null;
+                this._shopEl.style.display = 'none';
+                if (this.inRange) {
+                    this._prompt.style.left = `${sx}px`;
+                    this._prompt.style.top = `${sy - 4}px`;
+                    this._prompt.style.display = 'block';
+                } else {
+                    this._prompt.style.display = 'none';
+                }
+            }
+        }
+
+        destroy() {
+            this._shopEl?.remove();
+            this._prompt?.remove();
+        }
+    }
+
+
     return {
         MDecorative,
         MSolid,
@@ -4103,5 +4283,6 @@ const {
         MSwarmer,
         MPothead,
         MHatPoint,
+        MHatShop
     };
 })();

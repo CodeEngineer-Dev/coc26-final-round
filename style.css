@@ -221,3 +221,117 @@ canvas:focus {
     pointer-events: none;
     z-index: 15;
 }
+
+
+.hat-shop {
+    position: absolute;
+    transform: translateX(-50%) translateY(-100%);
+    margin-top: -12px;
+ 
+    background: #fff8e7;
+    border: 3px solid #2a1a1a;
+    border-radius: 6px;
+    padding: 10px 14px 12px;
+    min-width: 210px;
+ 
+    font-family: 'Exo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2a1a1a;
+    line-height: 1.4;
+ 
+    box-shadow: 3px 3px 0 #2a1a1a;
+    pointer-events: all;
+    z-index: 20;
+}
+ 
+/* Same tail arrow as .npc-bubble */
+.hat-shop::before {
+    content: '';
+    position: absolute;
+    bottom: -14px; left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #2a1a1a;
+}
+ 
+.hat-shop::after {
+    content: '';
+    position: absolute;
+    bottom: -9px; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #fff8e7;
+    z-index: 1;
+}
+ 
+.hat-shop-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #2a1a1a;
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+}
+ 
+.hat-shop-pts {
+    color: #9a7a5a;
+    text-align: center;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+ 
+ 
+.hat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(42, 26, 26, 0.15);
+}
+.hat-row:last-child {
+    border-bottom: none;
+}
+.hat-row-equipped {
+    color: #7a4a00;
+    font-weight: 700;
+}
+ 
+.hat-name {
+    flex: 1;
+}
+ 
+.hat-btn {
+    background: rgba(42, 26, 26, 0.07);
+    border: 2px solid #2a1a1a;
+    color: #2a1a1a;
+    font-family: 'Exo', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.1s;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.hat-btn:hover:not(:disabled) {
+    background: rgba(42, 26, 26, 0.18);
+}
+.hat-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.hat-btn-equipped {
+    background: rgba(42, 26, 26, 0.14);
+    border-color: #2a1a1a;
+    color: #7a4a00;
+}
+ 
+.hat-shop-hint {
+    text-align: center;
+    color: #9a7a5a;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    margin-top: 7px;
+}
