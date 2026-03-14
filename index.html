@@ -207,6 +207,43 @@
         engine.onGroundPound = () => addShake(10);
         engine.groundPoundMult = 2;
         engine.hatPoints = 0;
+
+
+        //hat shop
+        window._hatShopBuy = (key, cost) => {
+            if ((engine.hatPoints ?? 0) < cost) return;
+            engine.hatPoints -= cost;
+            const p = engine.player;
+            if (!p._ownedHats) p._ownedHats = [];
+            if (!p._ownedHats.includes(key)) p._ownedHats.push(key);
+            p.equippedHat = key;
+            //refresh open shop UI immediately
+            engine.world.iterate(obj => { if (obj instanceof MHatShop) obj._syncHTML(); });
+        };
+
+        window._hatShopEquip = (key) => {
+            const p = engine.player;
+            p.equippedHat = (!key || p.equippedHat === key) ? null : key;
+            engine.world.iterate(obj => { if (obj instanceof MHatShop) obj._syncHTML(); });
+        };
+
+        //render the hats
+        function renderPlayerHat(ctx, player, pixel, camera) {
+            if (!player.equippedHat) return;
+            const hatSprite = gfx.player.hats[player.equippedHat];
+            if (!hatSprite) return;
+
+            //hat on top of player
+            const { x, y } = camera.worldToScreen(player.x + player.w / 2, player.y);
+            const hw = hatSprite.w * pixel;
+            const hh = hatSprite.h * pixel;
+
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            hatSprite.draw(ctx, x - hw / 2, y - hh + pixel * 2, pixel, player.facing ?? 1);
+            ctx.restore();
+        }
+
         const ANIM_FPS = {
             idle: 4,
             run: 8,
@@ -784,6 +821,9 @@
                 ctx.save();
                 ctx.translate(shake.x, shake.y);
                 engine.tick(t, dt, events);
+
+                //hats
+                renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
 
                 //crazy Arrow idea lol
                 if (engine.slowMo) {
