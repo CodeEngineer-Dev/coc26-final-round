@@ -733,7 +733,7 @@
 
             //clear for real this frame
             ctx.fillStyle = "rgb(30, 20, 20)";
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, width / dprVal, height / dprVal);
 
             //chrome be tripping yall
             ctx.imageSmoothingEnabled = false;
@@ -798,7 +798,7 @@
                     grad.addColorStop(0, "rgba(30, 80, 180, 0)");
                     grad.addColorStop(1, "rgba(10, 30, 120, 0.55)");
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, width, height);
+                    ctx.fillRect(0, 0, width / dprVal, height / dprVal);
                 }
 
                 ctx.restore();
