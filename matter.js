@@ -2,6 +2,7 @@ const {
     MDecorative,
     MSolid,
     MHazard,
+    MLava,
     MEntity,
     MPlayer,
     MEnemy,
@@ -220,6 +221,22 @@ const {
          */
         constructor(x, y, w, h, texturer) {
             super(x, y, w, h, texturer);
+        }
+    }
+
+    class MLava extends MHazard {
+        static ANIM_FPS = 9;
+        constructor(x, y, isTop) {
+            super(x, y, 1, 1, (t, self) => {
+                if (!self.isTop) {
+                    let frames = gfx.props.environment.poison;
+                    return frames[Math.floor(t * MLava.ANIM_FPS) % frames.length];
+                } else if (self.isTop) {
+                    let frames = gfx.props.environment.poisonTop;
+                    return frames[Math.floor(t * MLava.ANIM_FPS) % frames.length];
+                }
+            })
+            this.isTop = isTop;
         }
     }
 
@@ -4067,6 +4084,7 @@ const {
         MDecorative,
         MSolid,
         MHazard,
+        MLava,
         MEntity,
         MPlayer,
         MEnemy,
