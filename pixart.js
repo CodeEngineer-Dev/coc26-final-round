@@ -4796,7 +4796,6 @@ var gfxData = {
 				]
 			],
 			gauntletDoorClose: [
-
 				[
 					"-..........-",
 					".deeeeeeeee.",
@@ -5368,6 +5367,46 @@ var gfxData = {
 					".dddddeeeee.",
 				],
 			],
+			gauntletDoorStatic: [
+				[
+					"-..........-",
+					".deeeeeeeee.",
+					".deeeeeeeee.",
+					".dddeeeeeee.",
+					".ddddddeeee.",
+					"-..........-",
+					"--.dddeee.--",
+					"--.dddee.---",
+					"--.ddeee.---",
+					"--.ddee.----",
+					"-.ddeee.----",
+					"-.ddeee.----",
+					"-.ddeee.----",
+					"--.ddee.----",
+					"--.ddeee.---",
+					"---.ddee.---",
+					"---.ddee.---",
+					"---.dddee.--",
+					"----.ddee.--",
+					"----.deee.--",
+					"----.deee.--",
+					"---.ddeee.--",
+					"---.dddee.--",
+					"--.dddeee.--",
+					"--.ddeee.---",
+					"--.deee.----",
+					"--.deee.----",
+					"--.deee.----",
+					"--.deee.----",
+					"---.deee.---",
+					"---.deee.---",
+					"-..........-",
+					".dddddeeeee.",
+					".dddddeeeee.",
+					".dddddeeeee.",
+					".dddddeeeee.",
+				],
+			],
 			hatPoint: [
 				[
 					"  ...",
@@ -5407,6 +5446,7 @@ var gfxData = {
 				],
 			],
 			hatStand: [
+				[
 					"---............---",
 					"--.iii.hhhh.iii.--",
 					"-.iiii.hhhh.iiii.-",
@@ -5426,6 +5466,7 @@ var gfxData = {
 					".eecce......ceecc.",
 					".eecceecceecceecc.",
 				],
+			],
 			groundPoundIcon: [
 				'-............-',
 				'.-----f------.',
