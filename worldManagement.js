@@ -1163,10 +1163,35 @@ const roomTemplates = {
 
         ],
     },
+
+    ℤ: {
+        bitmap: [
+            "",
+            "",
+            "",
+            "                                   ",
+            "BBBbbb                             ",
+            "BBBBbb                             ",
+            "BBBBbbb                       BBBBB",
+            "BBBBbbbbbb        bbbbbbb    BBBBBB",
+            "BBBBbbbbbbbbb   bbbbbbbbbbb@@###BBB",
+            "BBBBbbbbb@@@@@@@@@bbbbbbbb@@@###BBB",
+            "BBBBBbbbbbb@@@bbbbbbbbbbb@@@@######",
+            "BBBBBBBBB@@@@@@@@@bbbbbbb@@@@######",
+            "BBBBBBB####BBBBBBBBbbbbbbb@@@######",
+            "BBBBBB####BBBBBBBBBBBBBBBBBB#######",
+            "BBBBBB##########BBBBBBBBB##########",
+            "BBBB######BBBBBBBBBBBBBBBBB########",
+        ],
+        entities: {
+            "N": (x, y) => new MPothead(x, y),
+        },
+    },
 };
 
 const worldAssembly = [
-    "            ml",
+    //z is the testing room btw
+    "ℤ           ml",
     "            nk",
     "            oj",
     "          cdgi",
