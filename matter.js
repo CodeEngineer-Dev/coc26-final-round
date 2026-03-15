@@ -3549,17 +3549,17 @@ const {
 
             let player = this.engine?.player;
             if (player) {
-
                 if (
                     this._prevPlayerHealth !== null &&
                     this._prevPlayerHealth < player.maxHealth &&
                     player.health >= player.maxHealth
                 ) {
                     this.health = this.maxHealth;
+                    this.state = "idle";
                 }
                 this._prevPlayerHealth = player.health;
             }
-            
+
             if (this.carrying && !this.ball) {
                 this.ball = new MBall(this, 0, 0);
             }
