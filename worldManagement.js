@@ -1,19 +1,5 @@
 //each room has a name "A" for instance. World Assembly is where each room goes
 const roomTemplates = {
-    " ": {
-        bitmap: [
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-        ],
-    }, // An empty room for the " " character.
     A: {
         bitmap: [
             "#########################################",

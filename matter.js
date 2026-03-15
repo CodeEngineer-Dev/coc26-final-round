@@ -1407,47 +1407,51 @@ const {
             for (const row in worldAssembly) {
                 this.rooms.push([]);
                 for (const col in worldAssembly[row]) {
-                    this.rooms[row].push({
-                        zia: {},
-                        indices: [],
-                        entities: [],
-                        loaded: false,
-                        width: 0,
-                        height: 0,
-                        row: parseFloat(row),
-                        col: parseFloat(col),
-                    });
+                    if (this.assembly[row][col] in roomData) {
+                        this.rooms[row].push({
+                            zia: {},
+                            indices: [],
+                            entities: [],
+                            loaded: false,
+                            width: 0,
+                            height: 0,
+                            row: parseFloat(row),
+                            col: parseFloat(col),
+                        });
 
-                    const room = this.rooms[row][col];
-                    const key = this.assembly[row][col];
+                        const room = this.rooms[row][col];
+                        const key = this.assembly[row][col];
 
-                    //support both plain array rooms {} roomies yk
-                    const roomDef = this.roomData[key];
-                    const bitmap = Array.isArray(roomDef)
-                        ? roomDef
-                        : roomDef.bitmap;
+                        //support both plain array rooms {} roomies yk
+                        const roomDef = this.roomData[key];
+                        const bitmap = Array.isArray(roomDef)
+                            ? roomDef
+                            : roomDef.bitmap;
 
-                    //per-room entities take priority; fall back to globalEntityMap
-                    const entityMap =
-                        !Array.isArray(roomDef) && roomDef.entities
-                            ? roomDef.entities
-                            : globalEntityMap;
+                        //per-room entities take priority; fall back to globalEntityMap
+                        const entityMap =
+                            !Array.isArray(roomDef) && roomDef.entities
+                                ? roomDef.entities
+                                : globalEntityMap;
 
-                    const { width, height } = this.build(room, bitmap, tileMap);
-                    room.width = width;
-                    room.height = height;
+                        const { width, height } = this.build(room, bitmap, tileMap);
+                        room.width = width;
+                        room.height = height;
 
-                    if (typeof PlatformGraph !== "undefined") {
-                        room.graph = new PlatformGraph(
-                            bitmap,
-                            tileMap,
-                            this.engine,
-                        );
+                        if (typeof PlatformGraph !== "undefined") {
+                            room.graph = new PlatformGraph(
+                                bitmap,
+                                tileMap,
+                                this.engine,
+                            );
+                        }
+
+                        this._spawnEntities(room, bitmap, entityMap);
+
+                        room.loaded = true;
+                    } else {
+                        this.rooms[row].push(null);
                     }
-
-                    this._spawnEntities(room, bitmap, entityMap);
-
-                    room.loaded = true;
                 }
             }
         }
@@ -1662,16 +1666,18 @@ const {
          * @returns {any}
          */
         iterateRoom(room, callback) {
-            // go through in ASCENDING order
-            for (const i of room.indices) {
-                for (const obj of room.zia[i]) {
-                    const retval = callback(obj);
+            if (room) {
+                // go through in ASCENDING order
+                for (const i of room.indices) {
+                    for (const obj of room.zia[i]) {
+                        const retval = callback(obj);
+                        if (typeof retval !== "undefined") return retval;
+                    }
+                }
+                for (const entity of room.entities) {
+                    const retval = callback(entity);
                     if (typeof retval !== "undefined") return retval;
                 }
-            }
-            for (const entity of room.entities) {
-                const retval = callback(entity);
-                if (typeof retval !== "undefined") return retval;
             }
         }
     }
