@@ -83,6 +83,14 @@ const {
             this.set(x, y, x + w, y + h);
         }
 
+        get w() {
+            return this.x2 - this.x1;
+        }
+
+        get h() {
+            return this.y2 - this.y1;
+        }
+
         /** Checks for collision with alternate MBox
          *
          * @param {MBox} that
@@ -396,6 +404,7 @@ const {
                 1,
                 () => gfx.player.spikeBall,
             );
+            this.hboxSmall = 0.2; // thing that says how much to shrink the ball's hbox by
             this.xv = xv;
             this.yv = yv;
             this.owner = owner;
@@ -404,6 +413,20 @@ const {
             this.angle = 0;
             this.onGround = false;
             this._hitCooldowns = new Map();
+        }
+
+        /** Update hitbox
+         *
+         * @returns {void}
+         */
+        updateHitbox() {
+            this.hbox.setWH(
+                this.x + this.hboxSmall,
+                this.y + this.hboxSmall,
+                this.w - 2 * this.hboxSmall,
+                this.h - 2 * this.hboxSmall
+            );
+            this.dbox.setWH(this.x, this.y, this.w, this.h);
         }
 
         render(ctx, camera, t, pixel) {
@@ -443,15 +466,15 @@ const {
                         //wrong side.
                         this.x =
                             this.xv > 0
-                                ? xt.hbox.x1 - this.w - epsilon
-                                : xt.hbox.x2 + epsilon;
+                                ? xt.hbox.x1 - this.w + this.hboxSmall - epsilon
+                                : xt.hbox.x2 - this.hboxSmall + epsilon;
                         this.xv *= -MBall.bounce;
                     }
                 } else if (!(xt instanceof MBreakWall && xt._breaking)) {
                     this.x =
                         this.xv > 0
-                            ? xt.hbox.x1 - this.w - epsilon
-                            : xt.hbox.x2 + epsilon;
+                            ? xt.hbox.x1 - this.w + this.hboxSmall - epsilon
+                            : xt.hbox.x2 - this.hboxSmall + epsilon;
                     this.xv *= -MBall.bounce;
                 }
             }
@@ -464,8 +487,8 @@ const {
             if (yt) {
                 const falling = this.yv > 0;
                 this.y = falling
-                    ? yt.hbox.y1 - this.h - epsilon
-                    : yt.hbox.y2 + epsilon;
+                    ? yt.hbox.y1 - this.h + this.hboxSmall - epsilon
+                    : yt.hbox.y2 - this.hboxSmall + epsilon;
                 this.yv *= -MBall.bounce;
                 if (falling) {
                     this.onGround = true;
@@ -794,6 +817,7 @@ const {
                     (this.powers.groundedTeleport && this.ball.onGround);
                 if (canTeleport) {
                     //click while ball is out so holding and dragging right away works for quick chaining
+                    const epsilon = this.engine.epsilon;
                     this.x = this.ball.x + this.ball.w / 2 - this.w / 2;
                     this.y = this.ball.y + this.ball.h / 2 - this.h / 2;
                     this.xv = this.ball.xv;
@@ -826,38 +850,39 @@ const {
                     //push player out of any wall they landed in
                     const world = this.engine.world;
                     this.updateHitbox();
-                    if (this.touching(MSolid, world)) {
-                        //try nudging in the direction the ball was travelling
-                        const nudges = [
-                            [
-                                Math.sign(this.xv) *
-                                    (this.w + this.engine.epsilon),
-                                0,
-                            ],
-                            [
-                                0,
-                                Math.sign(this.yv) *
-                                    (this.h + this.engine.epsilon),
-                            ],
-                            [
-                                -Math.sign(this.xv) *
-                                    (this.w + this.engine.epsilon),
-                                0,
-                            ],
-                            [
-                                0,
-                                -Math.sign(this.yv) *
-                                    (this.h + this.engine.epsilon),
-                            ],
-                        ];
-                        for (const [nx, ny] of nudges) {
-                            this.x += nx;
-                            this.y += ny;
-                            this.updateHitbox();
-                            if (!this.touching(MSolid, world)) break;
-                            this.x -= nx;
-                            this.y -= ny;
-                            this.updateHitbox();
+                    const t = this.touchingAll(MSolid, world);
+                    if (t) {
+                        const colls = [];
+                        for (const b of t) {
+                            // block to left of player
+                            if (b.hbox.x1 < this.hbox.x1 && this.hbox.x1 < b.hbox.x2) {
+                                colls.push(["left", b, b.hbox.x2 - this.hbox.x1]);
+                            }
+                            // block to right of player
+                            if (b.hbox.x1 < this.hbox.x2 && this.hbox.x2 < b.hbox.x2) {
+                                colls.push(["right", b, this.hbox.x2 - b.hbox.x1]);
+                            }
+                            // block below player
+                            if (b.hbox.y1 < this.hbox.y1 && this.hbox.y1 < b.hbox.y2) {
+                                colls.push(["down", b, b.hbox.y2 - this.hbox.y1]);
+                            }
+                            // block above player
+                            if (b.hbox.y1 < this.hbox.y2 && this.hbox.y2 < b.hbox.y2) {
+                                colls.push(["up", b, this.hbox.y2 - b.hbox.y1]);
+                            }
+                        }
+                        colls.sort((a, b) => a[2] - b[2]);
+                        for (const coll of colls) {
+                            const [side, b, pdepth] = coll;
+                            if (this.hbox.collision(b.hbox)) {
+                                switch (side) {
+                                    case "left": this.x = b.hbox.x2 + epsilon; break;
+                                    case "right": this.x = b.hbox.x1 - this.w - epsilon; break;
+                                    case "down": this.y = b.hbox.y2 + epsilon; break;
+                                    case "up": this.y = b.hbox.y1 - this.h - epsilon; break;
+                                }
+                                this.updateHitbox();
+                            }
                         }
                     }
                     this.transport();
