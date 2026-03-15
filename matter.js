@@ -279,6 +279,7 @@ const {
             this.health = this.maxHealth;
             this.coyote = 0;
             this.coyoteLimit = 0.2;
+            this.defrictioned = false;
         }
 
         /** Update hitbox
@@ -336,7 +337,7 @@ const {
         tick(dt, events, attributes = {}) {
             const hvel = attributes.hvel ?? this.engine.hvel;
             const jump = attributes.jump ?? this.engine.jump;
-            const friction = attributes.friction ?? this.engine.friction;
+            const friction = (attributes.friction ?? this.engine.friction) * (this.defrictioned ? 0.1 : 1);
             const gravity = attributes.gravity ?? this.engine.gravity;
             const world = this.engine.world;
             const xAccel = -hvel * Math.log(friction);
@@ -352,6 +353,7 @@ const {
             if (this.touching(MSolid, world)) {
                 this.x -= this.xv * dt;
                 this.xv = 0;
+                this.defrictioned = true;
                 this.transport();
             }
             this.yv += gravity * dt;
@@ -360,6 +362,7 @@ const {
             this.transport();
             if (this.touching(MSolid, world)) {
                 this.y -= this.yv * dt;
+                this.defrictioned = true;
                 if (this.yv > 0) {
                     this.grounded = true;
                     this.coyote = 0;
@@ -934,6 +937,18 @@ const {
                 this.groundPounding = false;
                 this.impactTime = 0;
                 this.engine.onGroundPound?.();
+                // enemy collision deal damage by groundpound
+                let hitEnemies = this.touchingAll(MEnemy, this.engine.world);
+                for (const enemy of hitEnemies) {
+                    if (enemy.dead) continue;
+                    enemy.takeDamage(this.groundPoundTime * 500);
+                    // knockback the enemies
+                    const dx = this.x - enemy.x;
+                    const gauss = Math.exp(-dx * dx);
+                    enemy.yv -= 20 * gauss;
+                    enemy.xv += 500 * dx * gauss;
+                    enemy.defrictioned = true;
+                }
             }
 
             const impactDuration = 0.4;
@@ -1333,15 +1348,17 @@ const {
          * @param {MPlayer} player
          */
         onPlayerContact(player) {
-            const dy = player.y + player.h / 2 - (this.y + this.h / 2);
+            if (!player.groundPounding) {
+                const dy = player.y + player.h / 2 - (this.y + this.h / 2);
 
-            //player standing on enemy
-            //if (dy < -0.1 && player.yv >= 0) return;
+                //player standing on enemy
+                //if (dy < -0.1 && player.yv >= 0) return;
 
-            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
-            player.xv = Math.sign(dx || 1) * 15;
-            player.yv = -10;
-            player.takeDamage(34);
+                const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+                player.xv = Math.sign(dx || 1) * 15;
+                player.yv = -10;
+                player.takeDamage(34);
+            }
         }
 
         /** @param {number} amount */
@@ -3931,10 +3948,12 @@ const {
         }
 
         onPlayerContact(player) {
-            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
-            player.xv = Math.sign(dx || 1) * 5;
-            player.yv = -3;
-            player.takeDamage(8);
+            if (!player.groundPounding) {
+                const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+                player.xv = Math.sign(dx || 1) * 5;
+                player.yv = -3;
+                player.takeDamage(8);
+            }
         }
     }
 
@@ -4098,10 +4117,12 @@ const {
         }
 
         onPlayerContact(player) {
+            if (!player.groundPounding) {
             const dx = player.x + player.w / 2 - (this.x + this.w / 2);
-            player.xv = Math.sign(dx || 1) * 8;
-            player.yv = -5;
-            player.takeDamage(12);
+                player.xv = Math.sign(dx || 1) * 8;
+                player.yv = -5;
+                player.takeDamage(12);
+            }
         }
     }
 
@@ -4256,11 +4277,13 @@ const {
         }
 
         onPlayerContact(player) {
-            //the pothead lunges upward so player gets popped into the air
-            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
-            player.xv = Math.sign(dx || 1) * 5;
-            player.yv = -14;
-            player.takeDamage(25);
+            if (!player.groundPounding) {
+                //the pothead lunges upward so player gets popped into the air
+                const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+                player.xv = Math.sign(dx || 1) * 5;
+                player.yv = -14;
+                player.takeDamage(25);
+            }
         }
     }
 
@@ -4938,7 +4961,7 @@ const {
         }
 
         _checkPlayerContact(player) {
-            if (!player || player.room !== this.room || this.contactCooldown > 0) return;
+            if (!player || player.room !== this.room || this.contactCooldown > 0 || player.groundPounding) return;
             player.updateHitbox();
             this.updateHitbox();
             if (!this.hbox.collision(player.hbox)) return;
