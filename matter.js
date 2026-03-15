@@ -546,7 +546,7 @@ const {
             this.powers = {
                 ball: false,
                 groundedTeleport: false,
-                groundPound: true,
+                groundPound: false,
                 fullTeleport: false,
                 wallJump: false,
             };
@@ -3384,6 +3384,8 @@ const {
             this._throwTimer = 0;
             this._throwDuration = 0;
             this.tpBall = false;
+
+            this._prevPlayerHealth = null;
         }
 
         ai(dt) {
@@ -3544,6 +3546,16 @@ const {
          */
         tick(dt) {
             super.tick(dt);
+
+            if (
+                this._prevPlayerHealth !== null &&
+                this._prevPlayerHealth < player.maxHealth &&
+                player.health >= player.maxHealth
+            ) {
+                this.health = this.maxHealth;
+            }
+            this._prevPlayerHealth = player.health;
+
             if (this.carrying && !this.ball) {
                 this.ball = new MBall(this, 0, 0);
             }
