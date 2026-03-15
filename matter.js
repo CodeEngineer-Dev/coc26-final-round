@@ -550,6 +550,15 @@ const {
                 fullTeleport: false,
                 wallJump: false,
             };
+
+            // tmp for dev
+            this.powers = {
+                ball: true,
+                groundedTeleport: true,
+                groundPound: true,
+                fullTeleport: true,
+                wallJump: true,
+            };
             this._hitFlash = 0;
 
             this.wallSliding = false;
@@ -878,7 +887,7 @@ const {
                 !this.engine.slowMo &&
                 !this.dragging
             ) {
-                if (events.KeyA || events.KeyD || events.KeyW || events.KeyS) {
+                if (events.KeyE) {
                     this.carrying = true;
                 }
             }
