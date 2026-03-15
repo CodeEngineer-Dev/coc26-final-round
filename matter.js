@@ -3618,37 +3618,39 @@ const {
 
                 //push mimic out of any wall they landed in
                 const world = this.engine.world;
-                this.updateHitbox();
-                if (this.touching(MSolid, world)) {
-                    //try nudging in the direction the ball was travelling
-                    const nudges = [
-                        [
-                            Math.sign(this.xv) * (this.w + this.engine.epsilon),
-                            0,
-                        ],
-                        [
-                            0,
-                            Math.sign(this.yv) * (this.h + this.engine.epsilon),
-                        ],
-                        [
-                            -Math.sign(this.xv) *
-                                (this.w + this.engine.epsilon),
-                            0,
-                        ],
-                        [
-                            0,
-                            -Math.sign(this.yv) *
-                                (this.h + this.engine.epsilon),
-                        ],
-                    ];
-                    for (const [nx, ny] of nudges) {
-                        this.x += nx;
-                        this.y += ny;
-                        this.updateHitbox();
-                        if (!this.touching(MSolid, world)) break;
-                        this.x -= nx;
-                        this.y -= ny;
-                        this.updateHitbox();
+                const t = this.touchingAll(MSolid, world);
+                if (t) {
+                    const colls = [];
+                    for (const b of t) {
+                        // block to left of player
+                        if (b.hbox.x1 < this.hbox.x1 && this.hbox.x1 < b.hbox.x2) {
+                            colls.push(["left", b, b.hbox.x2 - this.hbox.x1]);
+                        }
+                        // block to right of player
+                        if (b.hbox.x1 < this.hbox.x2 && this.hbox.x2 < b.hbox.x2) {
+                            colls.push(["right", b, this.hbox.x2 - b.hbox.x1]);
+                        }
+                        // block below player
+                        if (b.hbox.y1 < this.hbox.y1 && this.hbox.y1 < b.hbox.y2) {
+                            colls.push(["down", b, b.hbox.y2 - this.hbox.y1]);
+                        }
+                        // block above player
+                        if (b.hbox.y1 < this.hbox.y2 && this.hbox.y2 < b.hbox.y2) {
+                            colls.push(["up", b, this.hbox.y2 - b.hbox.y1]);
+                        }
+                    }
+                    colls.sort((a, b) => a[2] - b[2]);
+                    for (const coll of colls) {
+                        const [side, b, pdepth] = coll;
+                        if (this.hbox.collision(b.hbox)) {
+                            switch (side) {
+                                case "left": this.x = b.hbox.x2 + epsilon; break;
+                                case "right": this.x = b.hbox.x1 - this.w - epsilon; break;
+                                case "down": this.y = b.hbox.y2 + epsilon; break;
+                                case "up": this.y = b.hbox.y1 - this.h - epsilon; break;
+                            }
+                            this.updateHitbox();
+                        }
                     }
                 }
                 this.transport();
