@@ -29,6 +29,7 @@ const {
     MHatPoint,
     MHatShop,
     MBackground,
+    MEnvironment,
     MPacman,
 } = (() => {
     /** MBox: an AABB hitbox implementation.
@@ -4919,6 +4920,26 @@ const {
         }
     }
 
+    class MEnvironment extends MDecorative {
+        static nameToData = {
+            "bush1": [1, 1, () => gfx.props.environment.bush1[0]],
+            "bush2": [2, 1, () => gfx.props.environment.bush2[0]],
+            "bush3": [2, 2, () => gfx.props.environment.bush3[0]],
+            "grass1": [1, 1, () => gfx.props.environment.grass1],
+            "grass2": [1, 1, () => gfx.props.environment.grass2],
+            "rock1": [1, 1, () => gfx.props.environment.rock1],
+            "rock2": [2, 1, () => gfx.props.environment.rock2],
+            "rock3": [2, 2, () => gfx.props.environment.rock3],
+            "mushroom1": [1, 1, () => gfx.props.environment.mushroom1],
+        }
+
+        constructor(x, y, name) {
+            let offset = name == "bush3" ? -0.55 : name == "rock1" ? +0.3 : name == "rock3" ? -0.1 : name == "grass1" || name == "grass2" ? 0.45 : name == "mushroom1" ? 0.35 : 0;
+            super(x, y + offset, ...MEnvironment.nameToData[name]);
+        }
+            
+    }
+
     /**
      * MPacman
      */
@@ -5513,6 +5534,7 @@ const {
         MHatPoint,
         MHatShop,
         MBackground,
+        MEnvironment,
         MPacman
     };
 })();
