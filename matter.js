@@ -4734,7 +4734,17 @@ const {
             { 
                 key: 'unicornHorn', 
                 name: 'Unicorn Horn',  
-                cost: 8 
+                cost: 5 
+            },
+            { 
+                key: 'partyHat', 
+                name: 'Party Hat',  
+                cost: 5 
+            },
+            {
+                key: "hatShopHat",
+                name: "Hat Shop Hat",
+                cost: 10,
             },
         ];
 
