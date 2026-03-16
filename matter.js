@@ -3381,7 +3381,7 @@ const {
         constructor(x, y) {
             const sprites = gfx.enemies.mimic;
 
-            super(x, y, 0.97, 1.4, 100, (t, self) => {
+            super(x, y, 0.97, 1.4, 300, (t, self) => {
                 if (self._hitFlash > 0) return gfx.enemies.mimic.hurt;
                 const state = self.state ?? "idle";
                 const carryMap = {
@@ -4037,7 +4037,7 @@ const {
 
     class MFlyer extends MEnemy {
         constructor(x, y) {
-            super(x, y, 0.9, 0.9, 40, (t, self) => {
+            super(x, y, 0.9, 0.9, 15, (t, self) => {
                 if (self._hitFlash > 0) return gfx.enemies.wingShroom.hit;
                 if (self.dead) {
                     const frames = gfx.enemies.wingShroom.die;
