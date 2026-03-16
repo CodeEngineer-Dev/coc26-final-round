@@ -106,6 +106,7 @@ const roomTemplates = {
             //'P': (x, y) => new MEyecrawler?.(x, y),
             //'M': (x, y) => new MMimic?.(x, y),
         },
+        background: "dungeon"
     },
     C: {
         bitmap: [
@@ -131,6 +132,7 @@ const roomTemplates = {
         entities: {
             'W': (x, y) => new MBreakWall(x, y, 'brickBreakWall', 'right'),
         },
+        background: "dungeon"
     },
     D: {
         bitmap: [
@@ -157,6 +159,7 @@ const roomTemplates = {
         entities: {
             'C': (x, y) => new MCheckpoint(x, y - 3),
         },
+        background: "dungeon"
     },
     E: {
         bitmap: [
@@ -184,6 +187,7 @@ const roomTemplates = {
             'C': (x, y) => new MCheckpoint(x, y - 3),
             'M': (x, y) => new MMinitaur(x, y),
         },
+        background: "dungeon"
     },
     F: {
         bitmap: [
@@ -207,6 +211,7 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MMinitaur(x, y),
         },
+        background: "dungeon"
     },
     G: {
         bitmap: [
@@ -239,6 +244,7 @@ const roomTemplates = {
                 "Good luck!",
             ], "sign")
         },
+        background: "dungeon"
     },
     H: {
         bitmap: [
@@ -259,6 +265,7 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MMinitaur(x, y),
         },
+        background: "dungeon"
     },
     I: {
         bitmap: [
@@ -285,6 +292,7 @@ const roomTemplates = {
             'F': (x, y) => new MFlyer(x, y),
             'Q': (x, y) => new MSwarmer(x, y, 5),
         },
+        background: "dungeon"
     },
     J: {
         bitmap: [
@@ -308,6 +316,7 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MMinitaur(x, y),
         },
+        background: "dungeon"
     },
     K: {
         bitmap: [
@@ -333,6 +342,7 @@ const roomTemplates = {
             'M': (x, y) => new MMinitaur(x, y),
             'R': (x, y) => new MBlob(x, y, "r2"),
         },
+        background: "dungeon"
     },
     L: {
         bitmap: [
@@ -369,7 +379,8 @@ const roomTemplates = {
             ], "pakala"),
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
-        }
+        },
+        background: "dungeon"
     },
     M: {
         bitmap: [
@@ -387,7 +398,8 @@ const roomTemplates = {
         ],
         entities: {
             'H': (x, y) => new MHatPoint(x, y),
-        }
+        },
+        background: "dungeon"
     },
     N: {
         bitmap: [
@@ -415,7 +427,8 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MMinitaur(x, y),
             'W': (x, y) => new MBreakWall(x, y, "brickBreakWall", "right")
-        }
+        },
+        background: "dungeon"
     },
     O: {
         bitmap: [
@@ -441,6 +454,7 @@ const roomTemplates = {
         entities: {
             'C': (x, y) => new MCheckpoint(x, y - 3),
         },
+        background: "underground"
     },
     P: {
         bitmap: [
@@ -468,6 +482,7 @@ const roomTemplates = {
             'E': (x, y) => new MBlob(x, y, 'g2'),
             'e': (x, y) => new MBlob(x, y, 'g1'),
         },
+        background: "underground"
     },
     Q: {
         bitmap: [
@@ -494,6 +509,7 @@ const roomTemplates = {
             'E': (x, y) => new MBlob(x, y, 'g2'),
             'e': (x, y) => new MBlob(x, y, 'g1'),
         },
+        background: "forest"
     },
     R: {
         bitmap: [
@@ -520,6 +536,7 @@ const roomTemplates = {
         entities: {
 
         },
+        background: "forest"
     },
     S: {
         bitmap: [
@@ -548,6 +565,7 @@ const roomTemplates = {
         entities: {
             'H': (x, y) => new MHatPoint(x, y),
         },
+        background: "forest"
     },
     T: {
         bitmap: [
@@ -577,6 +595,7 @@ const roomTemplates = {
         entities: {
 
         },
+        background: "forest"
     },
     U: {
         bitmap: [
@@ -610,6 +629,7 @@ const roomTemplates = {
                 "West Castle Tower\n<-",
             ], 'sign'),
         },
+        background: "forest"
     },
     V: {
         bitmap: [
@@ -650,6 +670,7 @@ const roomTemplates = {
             '$': (x, y) => new MHatShop(x, y + 13),
             'C': (x, y) => new MCheckpoint(x, y + 10),
         }, // Lotsa NPCs for this one. :)
+        background: "forest"
     },
     W: {
         bitmap: [
@@ -686,6 +707,7 @@ const roomTemplates = {
             'E': (x, y) => new MBlob(x, y, 'g2'),
             'e': (x, y) => new MBlob(x, y, 'g1'),
         },
+        background: "forest"
     },
     X: {
         bitmap: [

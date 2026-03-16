@@ -897,7 +897,7 @@
                 }*/
 
             //clear for real this frame
-            ctx.fillStyle = "rgb(200, 200, 200)";
+            ctx.fillStyle = "rgb(20, 30, 20)";
             ctx.fillRect(0, 0, width / dprVal, height / dprVal);
 
             //chrome be tripping yall
@@ -957,15 +957,23 @@
                 if (roomDef?.background) {
                     const bgSprite = gfx.props.backdrops[roomDef.background];
                     if (bgSprite) {
+                        // Background tiling
                         const camera = engine.renderer.camera;
                         const { x, y } = camera.worldToScreen(0, 0);
-                        const scaleX = (room.width * camera.tsz) / bgSprite.w;
-                        const scaleY = (room.height * camera.tsz) / bgSprite.h;
+
+                        const scaleX = (camera.tsz) / bgSprite.w;
+                        const scaleY = (camera.tsz) / bgSprite.h;
+
                         ctx.save();
                         ctx.imageSmoothingEnabled = false;
                         ctx.translate(x, y);
-                        ctx.scale(scaleX, scaleY);
-                        bgSprite.draw(ctx, 0, 0, 1);
+                        ctx.scale(scaleX, scaleY)
+                        
+                        for (let i = 0; i < room.width; i++) {
+                            for (let j = 0; j < room.height; j++) {
+                                bgSprite.draw(ctx, i * bgSprite.w, j * bgSprite.h, 1);
+                            }
+                        }
                         ctx.restore();
                     }
                 }
