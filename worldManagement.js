@@ -1,5 +1,19 @@
 //each room has a name "A" for instance. World Assembly is where each room goes
 const roomTemplates = {
+    " ": {
+        bitmap: [
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+            "          ",
+        ],
+    }, // An empty room for the " " character.
     A: {
         bitmap: [
             "#########################################",
@@ -220,7 +234,7 @@ const roomTemplates = {
             "                 ",
             "                 ",
             "####         ####",
-            "#@      1      @#",
+            "#@      1    S @#",
             "#@@@  #####  @@@#",
             "#@@@@@#####@@@@@#",
             "#@@@@#######@@@@#",
@@ -229,6 +243,14 @@ const roomTemplates = {
         ],
         entities: {
             '1': (x, y) => new MPowerPillar(x - 0.5, y - 1.8, "ball"),
+            'S': (x, y) => new MNPC(x + 0.3, y + 3.5, [
+                "You've gained a spike ball.",
+                "Click and drag to throw it.",
+                "Strategically set up your throws...",
+                "...to hit enemies as much as possible.",
+                "Press e to resummon the ball without throwing.",
+                "Good luck!",
+            ], "sign")
         },
     },
     H: {
@@ -977,7 +999,7 @@ const roomTemplates = {
             "^^^bbb^^                 bbbbbbbb^^^^^^^^^",
             "^^^bbb^^                 bbbb^^^^^^^^^^^^^",
             "^^^bbb^^                 bbbb^^^^^^^^^^^^^",
-            "^^^bbb^^b       1         bbb^^^^^^bbbbb^^",
+            "^^^bbb^^b S     1         bbb^^^^^^bbbbb^^",
             "^^^bbb^bbbb ^^^^^^^^         ^^^^^bbbbbbb^",
             "^^^bbb^bbbb^^^^^^^^^^        ^^^^^bbbbbbb^",
             "^^^bbbbbbbb^^^^^^^^^^        ^^^^^bbbbbbb^",
@@ -989,7 +1011,14 @@ const roomTemplates = {
         ],
         entities: {
             '1': (x, y) => new MPowerPillar(x - 1, y - 1.8, "wallJump"),
-            "H": (x, y) => new MHatPoint(x + 8, y)
+            "H": (x, y) => new MHatPoint(x + 8, y),
+            'S': (x, y) => new MNPC(x - 5, y + 5.5, [
+                "Congratulations on unlocking walljump.",
+                "Repeatedly jump near a wall to climb up.",
+                "Timing your jumps correctly allows for faster climbing..",
+                "...So be careful about it.",
+                "Good luck!",
+            ], "sign"),
         },
     },
     j: {
@@ -1303,7 +1332,7 @@ const roomTemplates = {
             "######==       #######  @@###",
             "#####===                @####",
             "##=======              @@####",
-            "#===bbb==b    C   P  @@@#####",
+            "#===bbb==b    C      @@@#####",
             "#==bbbbbbb         @@@@@#####",
             "#==bbbbbbbb       @@@@@######",
             "#==bbbbbbbbbb     @@@@@######",
@@ -1415,8 +1444,8 @@ const roomTemplates = {
             "###    S    1         bbb==",
             "###O  ###########     bbbbb",
             "@@@@@@###########bbbbbbbbbb",
-            "@@@@@@############bbbbbbbbb",
-            "@@@###############bbbbbbbbb",
+            "@@@@@#############bbbbbbbbb",
+            "@@@@@#############bbbbbbbbb",
             "####################=======",
         ],
         entities: {
@@ -1436,7 +1465,7 @@ const roomTemplates = {
             "=============================",
             "   ======    =             ==",
             "             =              =",
-            "    1      =   =            =",
+            "           =   =            =",
             "=====  =   =   =      H H H =",
             "====   =   =   =            =",
             "====LLL=   =   =    =========",
@@ -1523,7 +1552,23 @@ const roomTemplates = {
         },
     },
     6: {
-
+        bitmap: [
+            "                            ",
+            "                            ",
+            "                            ",
+            "                 BBBB       ",
+            "                   BBB      ",
+            "                    BBB     ",
+            "               H    BBB     ",
+            "                   BBBB     ",
+            "BBBB               BBBB     ",
+            "BBBBBBBBBBBBB     BBBBB     ",
+            "BBBBBBBBBBBBBBBBBBBBBBB     ",
+            "BBBBBBBBBBBBBBBBBBBBBBB     ",
+        ],
+        entities: {
+            'H': (x, y) => new MHatPoint(x, y),
+        },
     },
 
     0: {
@@ -1645,7 +1690,7 @@ const worldAssembly = [
     "            nk",
     "            oj",
     "s         cdgi",
-    "rqp    XYabefh",
+    "rqp6   XYabefh",
     "ZRQSTUVW w",
     "t PO   45x", 
     "uABCLKJI y",
