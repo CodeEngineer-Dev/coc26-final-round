@@ -1,19 +1,5 @@
 //each room has a name "A" for instance. World Assembly is where each room goes
 const roomTemplates = {
-    " ": {
-        bitmap: [
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-            "          ",
-        ],
-    }, // An empty room for the " " character.
     A: {
         bitmap: [
             "#########################################",
@@ -1683,6 +1669,69 @@ const roomTemplates = {
             "F": (x, y) => new MPothead(x, y),
         },
     },
+    // dev test
+    9: {
+        bitmap: [
+            "#########################################",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                                       #",
+            "#                           E           #",
+            "#                                       #",
+            "#########################################",
+        ],  
+        entities: {
+            '1': (x, y) => new MPowerPillar(x, y - 1.8, 'ball'),
+            '2': (x, y) => new MPowerPillar(x, y - 1.8, 'groundedTeleport'),
+            '3': (x, y) => new MPowerPillar(x, y - 1.8, 'groundPound'),
+            '4': (x, y) => new MPowerPillar(x, y - 1.8, 'fullTeleport'),
+            'H': (x, y) => new MPothead(x, y),
+            'Y': (x, y) => new MMimic(x, y - 0.3), // why is this Y? ftlogidk
+            'M': (x, y) => new MMinitaur(x, y - 0.3),
+            'E': (x, y) => new MBlob(x, y, 'g2'),
+            'e': (x, y) => new MBlob(x, y, 'g1'),
+            'C': (x, y) => new MCheckpoint(x, y - 3),
+            'N': (x, y) => new MNPC(x, y - 0.5, [
+                "hiiiii",   
+                "nl changed this line lol",
+                "he probably wont change it back",
+                "while typing this",
+                "he noticed it was predicting his text",
+                "this is really weird lol",
+            ], 'pakala'),
+            'K': (x, y) => new MNPC(x, y - 0.6, [
+                "hiiiii",   
+                "My name is classified",
+                ".",
+                "..",
+                "...",
+                "You don't know me son",
+            ], 'kili'),
+            'S': (x, y) => new MNPC(x, y - 0.5, [
+                "hiiiii",   
+                "My name is classified",
+                ".",
+                "..",
+                "...",
+                "You don't know me son",
+            ], 'sign'),
+            'W': (x, y) => new MBreakWall(x, y, 'brickBreakWall', 'right'),
+            // 'V': (x, y) => new MBreakWall(x, y, 'grassyBreakWall', 'right'),
+            // 'U': (x, y) => new MBreakWall(x, y, 'mushroomBreakWall','right'),
+        },
+    },
 };
 
 const worldAssembly = [
@@ -1696,6 +1745,6 @@ const worldAssembly = [
     "uABCLKJI y",
     "v  DEFGH z3",
     "      MN21",
-    "",
+    "9",
 ];
 

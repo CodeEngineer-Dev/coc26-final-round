@@ -280,6 +280,7 @@ const {
             this.coyote = 0;
             this.coyoteLimit = 0.2;
             this.defrictioned = false;
+            this._wasDefrictioned = false;
         }
 
         /** Update hitbox
@@ -337,7 +338,10 @@ const {
         tick(dt, events, attributes = {}) {
             const hvel = attributes.hvel ?? this.engine.hvel;
             const jump = attributes.jump ?? this.engine.jump;
-            const friction = (attributes.friction ?? this.engine.friction) * (this.defrictioned ? 0.1 : 1);
+            let friction = attributes.friction ?? this.engine.friction;
+            if (this.defrictioned) {
+                friction = 1 - (1 - friction) * 0.00001;
+            }
             const gravity = attributes.gravity ?? this.engine.gravity;
             const world = this.engine.world;
             const xAccel = -hvel * Math.log(friction);
@@ -353,7 +357,7 @@ const {
             if (this.touching(MSolid, world)) {
                 this.x -= this.xv * dt;
                 this.xv = 0;
-                this.defrictioned = true;
+                this.defrictioned = false;
                 this.transport();
             }
             this.yv += gravity * dt;
@@ -362,7 +366,7 @@ const {
             this.transport();
             if (this.touching(MSolid, world)) {
                 this.y -= this.yv * dt;
-                this.defrictioned = true;
+                this.defrictioned = false;
                 if (this.yv > 0) {
                     this.grounded = true;
                     this.coyote = 0;
@@ -385,6 +389,7 @@ const {
                 this.health = this.maxHealth;
                 this.transport();
             }
+            this._wasDefrictioned = this.defrictioned;
         }
 
         remove() {
@@ -591,6 +596,7 @@ const {
             this.wallDir = 0;
 
             this._wallJumpCooldown = 0;
+            this.gpExt = 2; // ground pound extension
         }
 
         takeDamage(amount) {
@@ -938,15 +944,25 @@ const {
                 this.impactTime = 0;
                 this.engine.onGroundPound?.();
                 // enemy collision deal damage by groundpound
-                let hitEnemies = this.touchingAll(MEnemy, this.engine.world);
+                const extendedBox = MBox.fromWH(
+                    this.x - this.gpExt,
+                    this.y,
+                    this.w + 2 * this.gpExt,
+                    this.h + this.gpExt
+                );
+                let hitEnemies = [];
+                this.engine.world.iterateRoom(this.room, (obj) => {
+                    if (obj instanceof MEnemy && obj?.hbox?.collision?.(extendedBox))
+                        hitEnemies.push(obj);
+                });
                 for (const enemy of hitEnemies) {
                     if (enemy.dead) continue;
-                    enemy.takeDamage(this.groundPoundTime * 500);
-                    // knockback the enemies
                     const dx = this.x - enemy.x;
                     const gauss = Math.exp(-dx * dx);
+                    enemy.takeDamage(this.groundPoundTime * 500 * gauss);
+                    // knockback the enemies
                     enemy.yv -= 20 * gauss;
-                    enemy.xv += 500 * dx * gauss;
+                    enemy.xv -= 50 * dx * gauss;
                     enemy.defrictioned = true;
                 }
             }
@@ -1012,14 +1028,7 @@ const {
                     dx = (dx / len) * maxDrag;
                     dy = (dy / len) * maxDrag;
                 }
-                ctx.save();
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + dx, y + dy);
-                ctx.stroke();
-                ctx.restore();
+                aim(ctx, x, y, dx, dy, pixel, 20, 5, t * 100);
             }
         }
     }
