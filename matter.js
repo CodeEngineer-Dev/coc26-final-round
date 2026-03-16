@@ -2131,7 +2131,7 @@ const {
 
             //reposition the player's respawn point to the base of this totem
             player.sx = this.x + 1 - player.w / 2;
-            player.sy = this.y + 4 - player.h;
+            player.sy = this.y + 4 - player.h - this.engine.epsilon;
             player.sroom = this.room;
         }
     }
