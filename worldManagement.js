@@ -983,6 +983,7 @@ const roomTemplates = {
         entities: {
             "H": (x, y) => new MHatPoint(x, y),
         },
+        background: "forest"
     },
     h: {
         bitmap: [
@@ -1155,7 +1156,7 @@ const roomTemplates = {
     o: {
         bitmap: [
             "^         ^^^          ^  ^",
-            "^         ^            ^  ^",
+            "^         ^        P   ^  ^",
             "^         ^            ^ ^^",
             "^         ^  ^^    ^^^^^  ^",
             "^         ^  ^        ^^  ^",
@@ -1405,7 +1406,7 @@ const roomTemplates = {
     z: {
         bitmap: [
             "===bbbb=============================",
-            "===bbbbbbb    ===     P      bbbbbbb",
+            "===bbbbbbb    ===            bbbbbbb",
             "====bbbbbb                 bbbbbbbbb",
             "======bbbbbbbb  bbbbbbbbb bbbbb==bbb",
             "====bbbb=bbb=bbbbbb=bbb=bbbbbbb=====",
