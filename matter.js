@@ -999,7 +999,7 @@ const {
 
             this._wasGrounded = this.grounded;
 
-            this.health += dt * 5;
+            this.health += dt * 2.5;
             this.health = Math.min(this.health, this.maxHealth);
         }
 
