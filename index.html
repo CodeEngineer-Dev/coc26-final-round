@@ -42,9 +42,156 @@
     <script type src="matter.js"></script>
     <script type src="userinput.js"></script>
     <script type src="worldManagement.js"></script>
-
+    <script type src="sounds.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
+
+        class AudioBuffer {
+            /* 
+                Created by Arrow
+                Docs: https://www.khanacademy.org/computer-programming/ka-music-player/5424847674523648
+            */
+            constructor() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.source = null;
+                this.buffer = null;
+                this.gainNode = this.audioContext.createGain();
+                this.gainNode.connect(this.audioContext.destination);
+            }
+            
+            async setBase64String(audioBufferString) {
+                this.audioBufferString = audioBufferString;
+                await this._initializeBuffer();
+            }
+            
+            async _initializeBuffer() {
+                const binaryString = atob(this.audioBufferString.split(',')[1]);
+                const bytes = Uint8Array.from(binaryString, char => char.charCodeAt(0));
+                this.buffer = await this.audioContext.decodeAudioData(bytes.buffer);
+            }
+
+            _createSource() {
+                this.source = this.audioContext.createBufferSource();
+                this.source.buffer = this.buffer;
+                this.source.connect(this.gainNode);
+                //loop!
+                this.source.loop = true;
+            }
+            
+            play() {
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                if (!this.source) {
+                    this._createSource();
+                    this.source.start(0);
+                }
+            }
+            
+            pause() {
+                if (this.source) {
+                    this.source.stop();
+                    this.source = null;
+                }
+            }
+            
+            setVolume(volume) {
+                this.gainNode.gain.value = volume;
+            }
+        }
+
+        //two footstep players, one per foot
+        let footL = null;
+        let footR = null;
+        let _stepTimer = 0;
+        let _stepFoot = 0;
+
+        async function initFootsteps() {
+            try {
+                footL = new AudioBuffer();
+                await footL.setBase64String("data:audio/mpeg;base64," + footstepSound);
+                footL.setVolume(0.35);
+
+                footR = new AudioBuffer();
+                await footR.setBase64String("data:audio/mpeg;base64," + footstepSound);
+                footR.setVolume(0.3);
+            } catch (e) {
+                console.error("failed to load footsteps:", e);
+            }
+        }
+
+        function playFootstep() {
+            if (!footL || !footR || isMuted) return;
+            if (_stepFoot === 0) {
+                footL.play();
+            } else {
+                footR.play();
+            }
+            _stepFoot ^= 1;
+        }
+
+        function tickFootsteps(dt, player) {
+            if (!footL || !footR) return;
+
+            const speed = Math.abs(player.xv);
+            const active = player.grounded && speed > 0.8;
+
+            if (active) {
+                const interval = Math.max(0.15, 0.5 / speed);
+                _stepTimer -= dt;
+                if (_stepTimer <= 0) {
+                    playFootstep();
+                    _stepTimer = interval;
+                }
+            } else {
+                _stepTimer = 0;
+            }
+        }
+
+        //music
+        let gameAudio = null;
+        let isMuted = false;
+
+        async function initAudio() {
+            gameAudio = new AudioBuffer();
+            try {
+                await gameAudio.setBase64String("data:audio/mpeg;base64," + dungeonMusic);
+                gameAudio.setVolume(1);
+                gameAudio.play();
+            } catch (e) {
+                console.error("failed to load audio:", e);
+            }
+        }
+
+        //audio button handler
+        const audioButton = document.getElementById("audio");
+        if (audioButton) {
+            audioButton.addEventListener("click", () => {
+                if (!gameAudio) {
+                    initAudio();
+                    return;
+                }
+
+                isMuted = !isMuted;
+                if (isMuted) {
+                    gameAudio.setVolume(0);
+                    footL?.setVolume(0);
+                    footR?.setVolume(0);
+                    audioButton.textContent = "volume_off";
+                } else {
+                    gameAudio.setVolume(1);
+                    footL?.setVolume(0.35);
+                    footR?.setVolume(0.3);
+                    audioButton.textContent = "volume_up";
+                }
+            });
+        }
+
+        // start both on first click
+        document.addEventListener("click", () => {
+            if (!gameAudio) initAudio();
+            if (!footL) initFootsteps();
+        }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
             if (!room) return;
@@ -1007,6 +1154,7 @@
                 drawRoomBackground(ctx, room, engine.renderer.camera);
 
                 engine.tick(t, dt, events);
+                tickFootsteps(dt, engine.player);
 
                 //hats - nevermore
                 //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
