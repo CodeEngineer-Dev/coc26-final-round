@@ -697,6 +697,8 @@ const {
                 this._roomChangedThisFrame = true;
                 this.engine.onRoomChange?.(dir);
             }
+            if (this.ball) this.carrying = true;
+            this.groundPounding = false;
         }
 
         /** Tick the game forward
@@ -950,7 +952,7 @@ const {
                         dx = this.x - enemy.hbox.x2;
                     }
                     const gauss = Math.exp(-dx * dx);
-                    enemy.takeDamage(this.groundPoundTime * 500 * gauss);
+                    enemy.takeDamage(this.groundPoundTime * 300 * gauss);
                     // knockback the enemies
                     enemy.yv -= 20 * gauss;
                     enemy.xv -= 50 * dx * gauss;
@@ -5004,7 +5006,7 @@ const {
 
         //dammage and death
         takeDamage(amount) {
-            if (this.dead) return;
+            if (this.dead || this._pstate == 'chomping' || this._pstate == 'licking') return;
             this._hitFlash = 0.15;
             this.health   -= amount;
             if (this.health <= 0) this.die();
