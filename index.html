@@ -100,7 +100,11 @@
             }
         }
 
-        //two footstep players, one per foot
+        function toDataURI(str) {
+            if (str.startsWith('data:')) return str;
+            return "data:audio/mpeg;base64," + str;
+        }
+
         let footL = null;
         let footR = null;
         let _stepTimer = 0;
@@ -109,14 +113,13 @@
         async function initFootsteps() {
             try {
                 footL = new AudioBuffer();
-                await footL.setBase64String("data:audio/mpeg;base64," + footstepSound);
+                await footL.setBase64String(toDataURI(footstepSound));
                 footL.setVolume(0.35);
 
                 footR = new AudioBuffer();
-                await footR.setBase64String("data:audio/mpeg;base64," + footstepSound);
+                await footR.setBase64String(toDataURI(footstepSound));
                 footR.setVolume(0.3);
 
-                //override _createSource on both so they play once and auto-cleanup
                 for (const foot of [footL, footR]) {
                     foot._createSource = function () {
                         this.source = this.audioContext.createBufferSource();
@@ -126,39 +129,59 @@
                         this.source.onended = () => { this.source = null; };
                     };
                 }
-            } catch (e) {
-                console.error("failed to load footsteps:", e);
-            }
+            } catch (e) { console.error("failed to load footsteps:", e); }
         }
 
         function playFootstep() {
             if (!footL || !footR || isMuted) return;
             const foot = _stepFoot === 0 ? footL : footR;
             _stepFoot ^= 1;
-            //pause() nulls the source so play() always creates a fresh one-shot
             foot.pause();
             foot.play();
         }
 
+        let impactAudio = null;
+
+        async function initImpactSound() {
+            try {
+                impactAudio = new AudioBuffer();
+                await impactAudio.setBase64String(toDataURI(impactSound));
+                impactAudio.setVolume(0);
+                impactAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load impact sound:", e); }
+        }
+
         let _prevPlayerState = null;
+        let _prevPreTickYv = 0;
 
-        function tickSounds(dt, player) {
-            if (!footL || !footR) return;
+        function tickSounds(dt, player, preTickYv) {
+            const wasAirborne = _prevPlayerState === "fall" || _prevPlayerState === "jump" || _prevPlayerState === "wallslide";
+            const justLanded  = wasAirborne && (player.state === "idle" || player.state === "run");
 
-            // jump sound on the frame state becomes "jump"
-            if (player.state === "jump" && _prevPlayerState !== "jump") {
-                if (jumpAudio && !isMuted) {
-                    jumpAudio.pause();
-                    jumpAudio.play();
+            if (justLanded && impactAudio && !isMuted) {
+                const minYv = 5;
+                const maxYv = 25;
+                // _prevPreTickYv is from the actual landing frame, not this frame
+                const vol = Math.min(1.0, Math.max(0.0, (_prevPreTickYv - minYv) / (maxYv - minYv)));
+                if (vol > 0) {
+                    impactAudio.setVolume(vol * 0.7);
+                    impactAudio.pause();
+                    impactAudio.play();
                 }
             }
+
             _prevPlayerState = player.state;
-
-            const speed = Math.abs(player.xv);
+            _prevPreTickYv = preTickYv;
+            
             const active = player.grounded && player.state === "run";
-
             if (active) {
-                const interval = Math.max(0.15, 0.5 / speed);
+                const interval = Math.max(0.15, 0.5 / Math.abs(player.xv));
                 _stepTimer -= dt;
                 if (_stepTimer <= 0) {
                     playFootstep();
@@ -168,50 +191,23 @@
                 _stepTimer = 0;
             }
         }
-
-        let jumpAudio = null;
-
-        async function initJumpSound() {
-            try {
-                jumpAudio = new AudioBuffer();
-                await jumpAudio.setBase64String("data:audio/mpeg;base64," + jumpSound);
-                jumpAudio.setVolume(0.5);
-                jumpAudio._createSource = function () {
-                    this.source = this.audioContext.createBufferSource();
-                    this.source.buffer = this.buffer;
-                    this.source.connect(this.gainNode);
-                    this.source.loop = false;
-                    this.source.onended = () => { this.source = null; };
-                };
-            } catch (e) {
-                console.error("failed to load jump sound:", e);
-            }
-        }
-
-        //music
+        
         let gameAudio = null;
         let isMuted = false;
 
         async function initAudio() {
             gameAudio = new AudioBuffer();
             try {
-                await gameAudio.setBase64String("data:audio/mpeg;base64," + dungeonMusic);
+                await gameAudio.setBase64String(toDataURI(dungeonMusic));
                 gameAudio.setVolume(1);
                 gameAudio.play();
-            } catch (e) {
-                console.error("failed to load audio:", e);
-            }
+            } catch (e) { console.error("failed to load audio:", e); }
         }
 
-        //audio button handler
         const audioButton = document.getElementById("audio");
         if (audioButton) {
             audioButton.addEventListener("click", () => {
-                if (!gameAudio) {
-                    initAudio();
-                    return;
-                }
-
+                if (!gameAudio) { initAudio(); return; }
                 isMuted = !isMuted;
                 if (isMuted) {
                     gameAudio.setVolume(0);
@@ -227,11 +223,10 @@
             });
         }
 
-        // start all on first click
         document.addEventListener("click", () => {
             if (!gameAudio) initAudio();
             if (!footL) initFootsteps();
-            if (!jumpAudio) initJumpSound();
+            if (!impactAudio) initImpactSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -1194,8 +1189,9 @@
                 const room = player?.room;
                 drawRoomBackground(ctx, room, engine.renderer.camera);
 
+                const preTickYv = engine.player.yv;
                 engine.tick(t, dt, events);
-                tickSounds(dt, engine.player);
+                tickSounds(dt, engine.player, preTickYv);
 
                 //hats - nevermore
                 //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
