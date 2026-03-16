@@ -1,3 +1,6 @@
+// TODO: engine for everything
+// TODO: sroom
+
 const {
     MDecorative,
     MSolid,
@@ -397,6 +400,10 @@ const {
             const idx = this.room?.entities.indexOf(this);
             if (idx != null && idx !== -1) this.room.entities.splice(idx, 1);
         }
+
+        data() {
+            return {};
+        }
     }
 
     class MBall extends MEntity {
@@ -541,6 +548,25 @@ const {
             //spin proportional to horizontal speed
             this.angle += this.xv * dt * 3;
             this.transport();
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data, owner) {
+            const b = new MBall(owner, data.xv, data.yv);
+            b.x = data.x;
+            b.y = data.y;
+            b.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return b;
         }
     }
 
@@ -1045,6 +1071,36 @@ const {
                 }
                 aim(ctx, x, y, dx, dy, pixel, 20, 5, t * 100);
             }
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                powers: this.powers,
+                ball: this.ball?.data() ?? null,
+                carrying: this.carrying
+            };
+        }
+
+        static fromData(data) {
+            const p = new MPlayer(data.x, data.y, 0.8, 1.4, playerTexturer);
+            p.x = data.x;
+            p.y = data.y;
+            p.sx = data.sx;
+            p.sy = data.sy;
+            p.xv = data.xv;
+            p.yv = data.yv;
+            p.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            p.powers = data.powers;
+            p.ball = MBall.fromData(data.ball, this);
+            return p;
         }
     }
 
@@ -1727,6 +1783,7 @@ const {
             }
         }
     }
+    // TODO: MWorld data thing
 
     /** MCamera class. Moves between world and screen, also determines if in view.
      *
@@ -2158,6 +2215,25 @@ const {
             player.sy = this.y + 4 - player.h - this.engine.epsilon;
             player.sroom = this.room;
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                state: this.state,
+                stateTime: this.stateTime,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const c = new MCheckpoint(data.x, data.y);
+            c.state = data.state;
+            c.stateTime = data.stateTime;
+            c.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return c;
+        }
     }
 
     class MTeleportEntryPoint extends MDecorative {
@@ -2269,11 +2345,44 @@ const {
         destroy() {
             this._prompt?.remove();
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                torow: this.to.row,
+                tocol: this.to.col,
+            };
+        }
+
+        static fromData(data) {
+            const c = new MTeleportEntryPoint(data.x, data.y);
+            c.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            c.to = this.engine.world.rooms[data.torow][data.tocol];
+            return c;
+        }
     }
 
     class MTeleportSpawnPoint extends MDecorative {
         constructor(x, y) {
             super(x, y, 1, 1, (t, self) => gfx.empty);
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const c = new MTeleportSpawnPoint(data.x, data.y);
+            c.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return c;
         }
     }
 
@@ -2431,6 +2540,31 @@ const {
             //if (this._state === "open" && this.completed) return;
             super.render(ctx, camera, t, pixel);
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                _state: this._state,
+                _roomSide: this.roomSide,
+                completed: this.completed,
+                _stateTimer: this._stateTimer,
+                _gauntletStarted: this._gauntletStarted,
+            };
+        }
+
+        static fromData(data) {
+            const d = new MGauntletDoor(data.x, data.y);
+            d.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            d._state = data._state;
+            d._roomSide = data._roomSide;
+            d.completed = data.completed;
+            d._stateTimer = data._stateTimer;
+            d._gauntletStarted = data._gauntletStarted;
+            return d;
+        }
     }
 
     class MNPC extends MDecorative {
@@ -2569,6 +2703,23 @@ const {
         destroy() {
             this._bubble?.remove();
             this._prompt?.remove();
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                spriteKey: this.spriteKey,
+                dialogue: this.dialogue,
+            };
+        }
+
+        static fromData(data) {
+            const n = new MNPC(data.x, data.y, data.dialogue, data.spriteKey);
+            n.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return n;
         }
     }
 
@@ -2771,6 +2922,7 @@ const {
             this.patrolDir = 1;
             this.jumpCooldown = 1 + Math.random() * 1.5;
             this.stallTimer = 0;
+            this.variant = variant;
 
             //AI crap
             this.aggroRange = big ? 8 : 6;
@@ -2846,6 +2998,32 @@ const {
                 this.jumpCooldown = 1.5 + Math.random() * 2;
             }
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                variant: this.variant,
+            };
+        }
+
+        static fromData(data) {
+            const e = new MBlob(data.x, data.y, data.variant);
+            e.x = this.x;
+            e.y = this.y;
+            e.sx = this.sx;
+            e.sy = this.sy;
+            e.xv = this.xv;
+            e.yv = this.yv;
+            e.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return e;
+        }
     }
 
     class MPoundFloor extends MSolid {
@@ -2872,7 +3050,7 @@ const {
             this._breaking = false;
             this._breakTimer = 0;
             this.type = type;
-            this.tempBox = MBox.fromWH(0, 0, 0, 0)
+            this.tempBox = MBox.fromWH(0, 0, 0, 0);
         }
 
         onGroundPound() {
@@ -2902,6 +3080,26 @@ const {
                     if (i !== -1) room.entities.splice(i, 1);
                 }
             }
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                _breaking: this._breaking,
+                _breakTimer: this._breakTimer,
+                type: this.type,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MPoundWall(data.x, data.y, data.type);
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            w._breaking = data._breaking;
+            w._breakTimer = data._breakTimer;
+            return w;
         }
     }
 
@@ -2972,6 +3170,27 @@ const {
                 const i = room.entities.indexOf(this);
                 if (i !== -1) room.entities.splice(i, 1);
             }
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                _breaking: this._breaking,
+                _breakTimer: this._breakTimer,
+                variant: this.variant,
+                breakSide: this.breakSide,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MPoundWall(data.x, data.y, data.variant, data.breakSide);
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            w._breaking = data._breaking;
+            w._breakTimer = data._breakTimer;
+            return w;
         }
     }
 
@@ -3377,6 +3596,36 @@ const {
                 spearSprite.draw(ctx, -sw / 2, -sh / 2, pixel);
                 ctx.restore();
             }
+        }
+
+        data() {
+            this._throwing = false;
+            this._windupTimer = 0;
+            this._spearActive = false;
+            this._throwCooldown = 0;
+
+            this._spear = null;
+            this._retrieving = false;
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MMinitaur(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
         }
     }
 
