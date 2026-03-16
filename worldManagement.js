@@ -10,12 +10,12 @@ const roomTemplates = {
             "#@@@@@@@           @@@@@           @@@@@@",
             "#@@@@@@@           @@@@@          #######",
             "#@@@@@@@           @@@@@    ###     #####",
-            "##@@@@@@@@   *****@@@@###            ####",
+            "##@@@@@@@@        @@@@###            ####",
             "##@@@@@@@@@  ######@@@@@@            ####",
             "###@@@@@@@@  ######@@@@@@            ####",
             "###@@@@@@@@@########@@@@@            ####",
             "####@@   @@@########@@@@@@          #####",
-            "####@  P  @##########@@@@@@@@@     ######",
+            "####@     @##########@@@@@@@@@     ######",
             "#####     @##############################",
             "#########################################",
             "#########################################",
@@ -735,6 +735,7 @@ const roomTemplates = {
         entities: {
             "C": (x, y) => new MCheckpoint(x + 1, y + 8),
         },
+        background: "forest"
     },
     Y: {
         bitmap: [
@@ -771,6 +772,7 @@ const roomTemplates = {
                 "Central Castle Tower <-",
             ], "sign"),
         },
+        background: "forest"
     },
     Z: {
         bitmap: [
@@ -798,6 +800,7 @@ const roomTemplates = {
             ], "sign"),
             "O": (x, y) => new MPoundFloor(x, y, "grassy"),
         },
+        background: "underground",
     },
     a: {
         bitmap: [
@@ -831,6 +834,7 @@ const roomTemplates = {
             'H': (x, y) => new MHatPoint(x, y),
             
         },
+        background: "forest"
     },
     b: {
         bitmap: [
@@ -858,6 +862,7 @@ const roomTemplates = {
         entities: {
             e: (x, y) => new MBlob(x, y, "g1"),
         },
+        background: "forest"
     },
     c: {
         bitmap: [
@@ -881,6 +886,7 @@ const roomTemplates = {
         entities: {
 
         },
+        background: "forest"
     },
     d: {
         bitmap: [
@@ -904,6 +910,7 @@ const roomTemplates = {
         entities: {
 
         },
+        background: "forest"
     },
     e: {
         bitmap: [
@@ -927,6 +934,7 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MFlyer(x, y),
         },
+        background: "forest"
     },
     f: {
         bitmap: [
@@ -950,6 +958,7 @@ const roomTemplates = {
         entities: {
             'M': (x, y) => new MFlyer(x, y),
         },
+        background: "forest"
     },
     g: {
         bitmap: [
@@ -999,6 +1008,7 @@ const roomTemplates = {
             "C": (x, y) => new MCheckpoint(x, y - 3),
             "W": (x, y) => new MBreakWall(x, y, "mushroomBreakWall", "right"),
         },
+        background: "forest"
     },
     i: {
         bitmap: [
@@ -1030,6 +1040,7 @@ const roomTemplates = {
                 "Good luck!",
             ], "sign"),
         },
+        background: "forest"
     },
     j: {
         bitmap: [
@@ -1054,6 +1065,7 @@ const roomTemplates = {
             'S': (x, y) => new MSwarmer(x, y),
             'F': (x, y) => new MFlyer(x, y),
         },
+        background: "forest"
     },
     k: {
         bitmap: [
@@ -1080,6 +1092,7 @@ const roomTemplates = {
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
         },
+        background: "forest"
     },
     l: {
         bitmap: [
@@ -1100,6 +1113,7 @@ const roomTemplates = {
             "^bbbbbbb                               ^^^",
             "^^bbb^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
         ],
+        background: "forest"
     },
     m: {
         bitmap: [
@@ -1115,6 +1129,7 @@ const roomTemplates = {
             "^                     ^^bb^",
             "^                      ^bb^",
         ],
+        background: "forest"
     },
     n: {
         bitmap: [
@@ -1135,6 +1150,7 @@ const roomTemplates = {
         entities: {
             "H": (x, y) => new MHatPoint(x, y),
         },
+        background: "forest",
     },
     o: {
         bitmap: [
@@ -1150,6 +1166,7 @@ const roomTemplates = {
             "^                 ^^   ^  ^",
             "^                      ^  ^",
         ],
+        background: "forest",
     },
     p: {
         bitmap: [
@@ -1173,6 +1190,7 @@ const roomTemplates = {
             "N": (x, y) => new MPothead(x, y),
             'C': (x, y) => new MCheckpoint(x - 0.75, y + 5),
         },
+        background: "forest"
     },
     q: {
         bitmap: [
@@ -1196,6 +1214,7 @@ const roomTemplates = {
         entities: {
             "N": (x, y) => new MPothead(x, y),
         },
+        background: "forest"
     },
     r: {
         bitmap : [
@@ -1215,6 +1234,7 @@ const roomTemplates = {
             "##@@@@@###BBBB",
             "###@@@#####BBB",
         ],
+        background: "forest"
     },
     s: {
         bitmap: [
@@ -1235,6 +1255,7 @@ const roomTemplates = {
         entities: {
             'H': (x, y) => new MHatPoint(x, y)
         },
+        background: "forest"
     },
     t: {
         bitmap: [
@@ -1256,6 +1277,7 @@ const roomTemplates = {
         entities: {
             "C": (x, y) => new MCheckpoint(x, y - 3),
         },
+        background: "dungeon"
     },
     u: {
         bitmap: [
@@ -1282,6 +1304,7 @@ const roomTemplates = {
             "]": (x, y) => new MGauntletDoor(x + 9, y - 2.5, "right"),
             "Y": (x, y) => new MMimic(x, y),
         },
+        background: "dungeon"
     },
     v: {
         bitmap: [
@@ -1312,6 +1335,7 @@ const roomTemplates = {
             ], "sign"),
             'H': (x, y) => new MHatPoint(x, y),
         },
+        background: "dungeon"
     },
     w: {
         bitmap: [
@@ -1332,6 +1356,7 @@ const roomTemplates = {
         entities: {
             "H": (x, y) => new MHatPoint(x, y - 0.5),
         },
+        background: "underground"
     },
     x: {
         bitmap: [
@@ -1351,6 +1376,7 @@ const roomTemplates = {
         entities: {
             "C": (x, y) => new MCheckpoint(x, y),
         },
+        background: "underground"
     },
     y: {
         bitmap: [
@@ -1374,11 +1400,12 @@ const roomTemplates = {
             'O': (x, y) => new MPoundFloor(x, y, "brick"),
             'p': (x, y) => new MPothead(x, y),
         },
+        background: "underground"
     },
     z: {
         bitmap: [
             "===bbbb=============================",
-            "===bbbbbbb    ===            bbbbbbb",
+            "===bbbbbbb    ===     P      bbbbbbb",
             "====bbbbbb                 bbbbbbbbb",
             "======bbbbbbbb  bbbbbbbbb bbbbb==bbb",
             "====bbbb=bbb=bbbbbb=bbb=bbbbbbb=====",
@@ -1399,6 +1426,7 @@ const roomTemplates = {
             "L": (x, y) => new MLava(x, y),
             "W": (x, y) => new MBreakWall(x, y, "brickBreakWall", "right")
         },
+        background: "underground"
     },
     1: {
         bitmap: [
@@ -1434,6 +1462,7 @@ const roomTemplates = {
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
         },
+        background: "underground"
     },
     2: {
         bitmap: [
@@ -1469,6 +1498,7 @@ const roomTemplates = {
                 "Go ahead and give it a try!",
             ], "sign")
         },
+        background: "underground"
     },
     3: {
         bitmap: [
@@ -1492,6 +1522,7 @@ const roomTemplates = {
             "L": (x, y) => new MLava(x, y),
             "1": (x, y) => new MPowerPillar(x, y, "wallJump"),
         },
+        background: "underground"
     },
     4: {
         bitmap: [
@@ -1516,6 +1547,7 @@ const roomTemplates = {
             "C": (x, y) => new MCheckpoint(x - 0.6, y - 3),
             "1": (x, y) => new MPowerPillar(x - 0.3, y - 1.8, "fullTeleport")
         },
+        background: "dungeon",
     },
     5: {
         bitmap: [
@@ -1560,6 +1592,7 @@ const roomTemplates = {
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
         },
+        background: "dungeon"
     },
     6: {
         bitmap: [
@@ -1579,6 +1612,7 @@ const roomTemplates = {
         entities: {
             'H': (x, y) => new MHatPoint(x, y),
         },
+        background: "forest",
     },
 
     0: {
