@@ -802,6 +802,7 @@ const {
                     this.carrying = true;
                 } else {
                     //real throw
+                    this.engine.onBallThrow?.();
                     if (len > this.constructor.maxDrag) {
                         dx = (dx / len) * this.constructor.maxDrag;
                         dy = (dy / len) * this.constructor.maxDrag;

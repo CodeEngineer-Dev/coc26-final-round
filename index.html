@@ -180,6 +180,29 @@
             coinAudio.play();
         }
 
+        let whooshAudio = null;
+
+        async function initWhooshSound() {
+            try {
+                whooshAudio = new AudioBuffer();
+                await whooshAudio.setBase64String(toDataURI(whooshSound));
+                whooshAudio.setVolume(0.5);
+                whooshAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load whoosh sound:", e); }
+        }
+
+        function playWhooshSound() {
+            if (!whooshAudio || isMuted) return;
+            whooshAudio.pause();
+            whooshAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
@@ -237,12 +260,14 @@
                     footL?.setVolume(0);
                     footR?.setVolume(0);
                     coinAudio?.setVolume(0);
+                    whooshAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
                     footL?.setVolume(0.35);
                     footR?.setVolume(0.3);
                     coinAudio?.setVolume(0.6);
+                    whooshAudio?.setVolume(0.5);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -253,6 +278,7 @@
             if (!footL) initFootsteps();
             if (!impactAudio) initImpactSound();
             if (!coinAudio) initCoinSound();
+            if (!whooshAudio) initWhooshSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -285,6 +311,7 @@
 
         //sound hooks
         engine.onCoinCollect = () => playCoinSound();
+        engine.onBallThrow = () => playWhooshSound();
 
         const shakes = [];
         const shake = { x: 0, y: 0 };
