@@ -53,3 +53,25 @@ function mapToLine(x1, y1, x2, y2, percentage) {
 function globalGetter(name, f) {
     Object.defineProperty(globalThis, name, { get () { return f(); }});
 }
+
+/** Aiming animation */
+function aim(ctx, cx, cy, xdir, ydir, pixel, sep, radius, t) {
+    const magdir = Math.sqrt(xdir * xdir + ydir * ydir);
+    const c = xdir / magdir, s = ydir / magdir;
+    const o = Math.ceil(magdir / pixel) * pixel;
+    for (let x = cx - o; x < cx + o; x += pixel) {
+        for (let y = cy - o; y < cy + o; y += pixel) {
+            let val = 0;
+            for (let a = t % sep; a < magdir; a += sep) {
+                const ratio = a / magdir;
+                const bx = cx + a * c, by = cy + a * s;
+                const dx = x - bx, dy = y - by;
+                const gauss = Math.exp(-(dx * dx + dy * dy) / (radius * radius));
+                // 4 is because (1 - ratio) * ratio has a max val of 0.25
+                val += 4 * gauss * (1 - ratio) * ratio;
+            }
+            ctx.fillStyle = `rgba(255, 255, 255, ${val})`;
+            ctx.fillRect(x, y, pixel, pixel);
+        }
+    }
+}
