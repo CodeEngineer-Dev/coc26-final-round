@@ -725,12 +725,6 @@ const {
             if (this.groundPounding) this.groundPoundTime += dt;
             if (this.impactTime !== null) this.impactTime += dt;
 
-            const physEvents = this.groundPounding
-                ? { ...events, KeyW: false, KeyA: false, KeyD: false }
-                : events;
-
-            //start physics
-            super.tick(dt, physEvents);
             if (this._hitFlash > 0) this._hitFlash -= dt;
             if (!this._groundedOnEnemy) {
                 this._standingOnEnemy = null;
@@ -926,16 +920,6 @@ const {
                 }
             }
 
-            if (this.ball && this.carrying) {
-                this.ball.xv = 0;
-                this.ball.yv = 0;
-                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
-                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
-                this.ball.y = this.y - 0.55;
-                this.ball.room = this.room;
-                this.ball.updateHitbox();
-            }
-
             if (events.KeyA) this.facing = -1;
             if (events.KeyD) this.facing = 1;
 
@@ -957,7 +941,14 @@ const {
                 });
                 for (const enemy of hitEnemies) {
                     if (enemy.dead) continue;
-                    const dx = this.x - enemy.x;
+                    let dx;
+                    if (this.x > enemy.hbox.x1 && this.x < enemy.hbox.x2) {
+                        dx = 0;
+                    } else if (this.x <= enemy.hbox.x1) {
+                        dx = enemy.hbox.x1 - this.x;
+                    } else if (this.x >= enemy.hbox.x2) {
+                        dx = this.x - enemy.hbox.x2;
+                    }
                     const gauss = Math.exp(-dx * dx);
                     enemy.takeDamage(this.groundPoundTime * 500 * gauss);
                     // knockback the enemies
@@ -987,6 +978,23 @@ const {
             } else {
                 this.airTime = 0;
                 this.state = Math.abs(this.xv) > 0.5 ? "run" : "idle";
+            }
+
+            const physEvents = this.groundPounding
+                ? { ...events, KeyW: false, KeyA: false, KeyD: false }
+                : events;
+
+            //start physics
+            super.tick(dt, physEvents);
+
+            if (this.ball && this.carrying) {
+                this.ball.xv = 0;
+                this.ball.yv = 0;
+                //this.ball.x = this.x + this.w / 2 - this.ball.w / 2 + 0.05;
+                this.ball.x = this.x + this.w / 2 - this.ball.w / 2;
+                this.ball.y = this.y - 0.55;
+                this.ball.room = this.room;
+                this.ball.updateHitbox();
             }
 
             this._wasGrounded = this.grounded;
@@ -1366,7 +1374,7 @@ const {
                 const dx = player.x + player.w / 2 - (this.x + this.w / 2);
                 player.xv = Math.sign(dx || 1) * 15;
                 player.yv = -10;
-                player.takeDamage(34);
+                player.takeDamage(20);
             }
         }
 
@@ -4291,7 +4299,7 @@ const {
                 const dx = player.x + player.w / 2 - (this.x + this.w / 2);
                 player.xv = Math.sign(dx || 1) * 5;
                 player.yv = -14;
-                player.takeDamage(25);
+                player.takeDamage(20);
             }
         }
     }
@@ -4966,7 +4974,7 @@ const {
                     }
                 } else {
                     const prevY = player.y;
-                    player.y+= push;
+                    player.y += push;
                     player.updateHitbox();
                     if (player.touching(MSolid, world)) {
                         player.y = prevY;
@@ -4985,7 +4993,7 @@ const {
             const dx = player.x + player.w / 2 - (this.x + this.w / 2);
             player.xv = Math.sign(dx || 1) * 22;
             player.yv = -16;
-            player.takeDamage(30);
+            player.takeDamage(20);
             this.contactCooldown = 0.7;
         }
 

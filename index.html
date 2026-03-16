@@ -527,7 +527,7 @@
          */
         function renderHUD(ctx, player, pixel, t) {
             //hearts
-            const MAX_HEARTS = 3;
+            const MAX_HEARTS = 10;
             const filledHearts = Math.ceil(
                 (player.health / player.maxHealth) * MAX_HEARTS,
             );
@@ -543,7 +543,7 @@
                     i < filledHearts
                         ? gfx.player.heartFull
                         : gfx.player.heartEmpty;
-                sprite.draw(ctx, marginX + i * (heartW + gap), marginY, pixel);
+                sprite.draw(ctx, marginX + i * (heartW + gap), effectiveHeight - marginY - sprite.h * pixel, pixel);
             }
 
             // hat points counter
