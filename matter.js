@@ -4304,15 +4304,15 @@ const {
 
         constructor(x, y) {
             super(x, y, 0.6, 0.6, (t, self) => {
-                if (self.collected) return gfx.empty;
                 const frames = gfx.props.misc.hatPoint;
                 return frames[Math.floor(t * MHatPoint.ANIM_FPS) % frames.length];
             });
             this.collected = false;
+            this.collectedTime = 0;
         }
 
         tick(dt) {
-            if (this.collected) return;
+            if (this.collected) { this.collectedTime += dt; return; }
             const player = this.engine?.player;
             if (!player || player.room !== this.room) return;
 
@@ -4325,11 +4325,18 @@ const {
         }
 
         render(ctx, camera, t, pixel) {
-            if (this.collected) return;
+            const collT = this.collectedTime;
             const bob = Math.sin(t * MHatPoint.BOB_SPEED) * MHatPoint.BOB_AMP;
-            const { x, y } = camera.worldToScreen(this.x, this.y);
+            let { x, y } = camera.worldToScreen(this.x, this.y);
             const sprite = this.texturer(t, this);
-            sprite.draw(ctx, x, y + bob, pixel);
+            sprite.draw(ctx, x, y + bob - collT * 2000, pixel);
+            if (this.collected) {
+                ctx.strokeStyle = `rgba(62, 105, 58, ${1 - collT * 4})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, collT * 400, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
         }
     }
 
