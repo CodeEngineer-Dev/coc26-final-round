@@ -75,3 +75,66 @@ function aim(ctx, cx, cy, xdir, ydir, pixel, sep, radius, t) {
         }
     }
 }
+
+const playerTexturer = (t, player) => {
+    if (player._hitFlash > 0) return gfx.player.hurt[0];
+    const state = player.state ?? "idle";
+    const carryMap = {
+        idle: "carryidle",
+        run: "carryrun",
+        jump: "carryjump",
+        fall: "carryfall",
+    };
+    const holding =
+        player.ball &&
+        (player.engine.slowMo || player.dragging || player.carrying);
+    const spriteState =
+        holding && carryMap[state] ? carryMap[state] : state;
+    const frames = gfx.player[spriteState] ?? gfx.player.idle;
+    const fps = ANIM_FPS[state] ?? 6;
+    const count = Object.keys(frames).length;
+    let frame;
+
+    //if you prefer chaining if else statements you need help
+    switch (state) {
+        case "jump":
+        case "fall": {
+            frame = Math.min(
+                count - 1,
+                Math.floor((player.airTime ?? 0) * fps),
+            );
+            break;
+        }
+        case "groundpound": {
+            frame = 0;
+            break;
+        }
+        case "groundpoundimpact": {
+            //play impact frames forward once then hold last
+            frame = Math.min(
+                count - 1,
+                Math.floor((player.impactTime ?? 0) * fps),
+            );
+            break;
+        }
+        case "throw": {
+            const dx = player.dragX - player.dragInitX;
+            const dy = player.dragY - player.dragInitY;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            frame = Math.floor(
+                Math.min(len / player.maxDrag, 1) * (count - 1),
+            );
+            break;
+        }
+        case "wallslide": {
+            return gfx.player.wallslide;
+        }
+        default: {
+            frame = Math.floor(t * fps) % count;
+        }
+    }
+
+    //just in case yk?
+    frame = Math.max(0, Math.min(count - 1, frame));
+    return frames[frame];
+}

@@ -203,6 +203,29 @@
             whooshAudio.play();
         }
 
+        let bounceAudio = null;
+
+        async function initBounceSound() {
+            try {
+                bounceAudio = new AudioBuffer();
+                await bounceAudio.setBase64String(toDataURI(bounceSound));
+                bounceAudio.setVolume(0.4);
+                bounceAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load bounce sound:", e); }
+        }
+
+        function playBounceSound() {
+            if (!bounceAudio || isMuted) return;
+            bounceAudio.pause();
+            bounceAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
@@ -261,6 +284,7 @@
                     footR?.setVolume(0);
                     coinAudio?.setVolume(0);
                     whooshAudio?.setVolume(0);
+                    bounceAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
@@ -268,6 +292,7 @@
                     footR?.setVolume(0.3);
                     coinAudio?.setVolume(0.6);
                     whooshAudio?.setVolume(0.5);
+                    bounceAudio?.setVolume(0.4);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -279,6 +304,7 @@
             if (!impactAudio) initImpactSound();
             if (!coinAudio) initCoinSound();
             if (!whooshAudio) initWhooshSound();
+            if (!bounceAudio) initBounceSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -312,6 +338,14 @@
         //sound hooks
         engine.onCoinCollect = () => playCoinSound();
         engine.onBallThrow = () => playWhooshSound();
+        engine.onBallBounce = (speed) => {
+            if (!bounceAudio || isMuted) return;
+            const vol = Math.min(1.0, speed / 15) * 0.5;
+            if (vol < 0.05) return;
+            bounceAudio.setVolume(vol);
+            bounceAudio.pause();
+            bounceAudio.play();
+        };
 
         const shakes = [];
         const shake = { x: 0, y: 0 };
@@ -654,68 +688,7 @@
 
         engine.world.init(roomTemplates, worldAssembly, tileMap);
 
-        engine.createPlayer(5, 5, 0.8, 1.4, (t, player) => {
-            if (player._hitFlash > 0) return gfx.player.hurt[0];
-            const state = player.state ?? "idle";
-            const carryMap = {
-                idle: "carryidle",
-                run: "carryrun",
-                jump: "carryjump",
-                fall: "carryfall",
-            };
-            const holding =
-                player.ball &&
-                (player.engine.slowMo || player.dragging || player.carrying);
-            const spriteState =
-                holding && carryMap[state] ? carryMap[state] : state;
-            const frames = gfx.player[spriteState] ?? gfx.player.idle;
-            const fps = ANIM_FPS[state] ?? 6;
-            const count = Object.keys(frames).length;
-            let frame;
-
-            //if you prefer chaining if else statements you need help
-            switch (state) {
-                case "jump":
-                case "fall": {
-                    frame = Math.min(
-                        count - 1,
-                        Math.floor((player.airTime ?? 0) * fps),
-                    );
-                    break;
-                }
-                case "groundpound": {
-                    frame = 0;
-                    break;
-                }
-                case "groundpoundimpact": {
-                    //play impact frames forward once then hold last
-                    frame = Math.min(
-                        count - 1,
-                        Math.floor((player.impactTime ?? 0) * fps),
-                    );
-                    break;
-                }
-                case "throw": {
-                    const dx = player.dragX - player.dragInitX;
-                    const dy = player.dragY - player.dragInitY;
-                    const len = Math.sqrt(dx * dx + dy * dy);
-                    frame = Math.floor(
-                        Math.min(len / player.maxDrag, 1) * (count - 1),
-                    );
-                    break;
-                }
-                case "wallslide": {
-                    return gfx.player.wallslide;
-                }
-                default: {
-                    frame = Math.floor(t * fps) % count;
-                }
-            }
-
-            //just in case yk?
-            frame = Math.max(0, Math.min(count - 1, frame));
-            return frames[frame];
-        });
+        engine.createPlayer(5, 5, 0.8, 1.4, playerTexturer);
 
         engine.onRenderHat = (ctx, player, pixel, camera) => renderPlayerHat(ctx, player, pixel, camera);
 
