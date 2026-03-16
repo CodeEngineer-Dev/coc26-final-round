@@ -1,5 +1,6 @@
 // TODO: engine for everything
 // TODO: sroom
+// TODO: health
 
 const {
     MDecorative,
@@ -3999,8 +4000,32 @@ const {
             if (events.KeyA) this.facing = -1;
             if (events.KeyD) this.facing = 1;*/
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MMimic(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
+        }
     }
 
+    // DO
     /**
      * MPowerPillar: collectible fire pillar that grants a player ability.
      * powerType: 'ball' | 'groundedTeleport' | 'groundPound' | 'fullTeleport'
@@ -4240,8 +4265,32 @@ const {
                 player.takeDamage(8);
             }
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MSwarmerUnit(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
+        }
     }
 
+    // DO
     class MSwarmer {
         constructor(x, y, count = 4) {
             this.x = x;
@@ -4409,6 +4458,29 @@ const {
                 player.takeDamage(12);
             }
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MFlyer(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
+        }
     }
 
     class MPothead extends MEnemy {
@@ -4570,8 +4642,32 @@ const {
                 player.takeDamage(20);
             }
         }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MPothead(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
+        }
     }
 
+    // DO
     class MHatPoint extends MDecorative {
         static COLLECT_RADIUS = 1.2;
         static BOB_SPEED = 3;
@@ -4618,6 +4714,7 @@ const {
         }
     }
 
+    // DO
     class MHatShop extends MDecorative {
         static TALK_RADIUS = 4;
         static ANIM_FPS = 3;
@@ -4886,7 +4983,7 @@ const {
             this._chargeCooldown = MPacman.CHARGE_CD_MIN + Math.random() * (MPacman.CHARGE_CD_MAX - MPacman.CHARGE_CD_MIN);
             this._chargingDive = false;
             this._chargeAirTimer = 0;
-            this._wasGrounded= false;
+            this._wasGrounded = false;
             this.contactCooldown = 0;
 
             
@@ -5321,6 +5418,71 @@ const {
             }
 
             ctx.restore();
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                _pstate: this._pstate,
+                _angle: this._angle,
+                _lickTimer: this._lickTimer,
+                _chompTimer: this._chompTimer,
+                _diveCooldown: this._diveCooldown,
+                _jumpCooldown: this._jumpCooldown,
+                _chargingDive: this._chargingDive,
+                _chargeAirTimer: this._chargeAirTimer,
+                contactCooldown: this.contactCooldown,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MMimic(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            w._pstate = data._pstate;
+            w._angle = data._angle;
+            w._lickTimer = data._lickTimer;
+            w._chompTimer = data._chompTimer;
+            w._diveCooldown = data._diveCooldown;
+            w._jumpCooldown = data._jumpCooldown;
+            w._chargingDive = data._chargingDive;
+            w._chargeAirTimer = data._chargeAirTimer;
+            w.contactCooldown = data.contactCooldown;
+            return w;
+        }
+
+        data() {
+            return {
+                x: this.x,
+                y: this.y,
+                sx: this.sx,
+                sy: this.sy,
+                xv: this.xv,
+                yv: this.yv,
+                roomrow: this.room.row,
+                roomcol: this.room.col,
+                name: this.name,
+            };
+        }
+
+        static fromData(data) {
+            const w = new MMimic(data.x, data.y);
+            w.sx = data.sx;
+            w.sy = data.sy;
+            w.xv = data.xv;
+            w.yv = data.yv;
+            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
+            return w;
         }
     }
 
