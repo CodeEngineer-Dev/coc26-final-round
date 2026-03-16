@@ -45,6 +45,29 @@
 
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
+
+        function drawRoomBackground(ctx, room, camera) {
+            if (!room) return;
+            const roomKey = worldAssembly[room.row]?.[room.col];
+            const roomDef = roomTemplates[roomKey];
+            if (!roomDef?.background) return;
+            const bgSprite = gfx.props.backdrops[roomDef.background];
+            if (!bgSprite) return;
+            const { x, y } = camera.worldToScreen(0, 0);
+            const scaleX = camera.tsz / bgSprite.w;
+            const scaleY = camera.tsz / bgSprite.h;
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.translate(x, y);
+            ctx.scale(scaleX, scaleY);
+            for (let i = 0; i < room.width; i++) {
+                for (let j = 0; j < room.height; j++) {
+                    bgSprite.draw(ctx, i * bgSprite.w, j * bgSprite.h, 1);
+                }
+            }
+            ctx.restore();
+        }
+
         const engine = MEngine.create({});
         engine.setRenderConfig(canvas, 36, 9);
 
@@ -515,7 +538,21 @@
         engine.onRoomChange = (dir) => {
             if (dir === "top") engine._pendingUpBoost = true;
             if (roomTransition.active) return;
+
+            //capture old room 
             roomTransition.capture(canvas, engine);
+
+            //pre-render new room (player.room is already the new room at this point)
+            ctx.fillStyle = "rgb(20, 30, 20)";
+            ctx.fillRect(0, 0, width / dprVal, height / dprVal);
+            ctx.imageSmoothingEnabled = false;
+            drawRoomBackground(ctx, engine.player.room, engine.renderer.camera);
+            engine.renderer.render(t);
+            roomTransition.captureNew(canvas, engine);
+
+            //restore old room to canvas so the rest of this frame draws correctly
+            ctx.drawImage(roomTransition.snap, 0, 0);
+
             roomTransition.start(dir);
         };
 
@@ -941,19 +978,13 @@
 
             if (roomTransition.active) {
                 if (!roomTransition.newCaptured) {
-                    const cam = engine.renderer.camera;
-                    //cam.lockZoom = true;
-                    /*if (roomTransition.dir === 'left' || roomTransition.dir === 'right') {
-                            cam.lockFocusY = true;
-                        } else {
-                            cam.lockFocusX = true;
-                        }*/
-                    engine.renderer.render(t); /*
-                        cam.lockZoom   = false;
-                        cam.lockFocusX = false;
-                        cam.lockFocusY = false;*/
+                    ctx.fillStyle = "rgb(20, 30, 20)";
+                    ctx.fillRect(0, 0, width / dprVal, height / dprVal);
+                    ctx.imageSmoothingEnabled = false;
+                    drawRoomBackground(ctx, engine.player.room, engine.renderer.camera);
+                    engine.renderer.render(t);
                     roomTransition.captureNew(canvas, engine);
-                    ctx.fillStyle = "rgb(100, 100, 100)";
+                    ctx.fillStyle = "rgb(20, 30, 20)";
                     ctx.fillRect(0, 0, width, height);
                 }
 
@@ -964,7 +995,6 @@
                 ctx.restore();
 
                 engine.renderer._skipRender = true;
-                //freeze physics an' preserve velocity
                 engine.tick(t, 0, {});
                 engine.renderer._skipRender = false;
                 roomTransition.tick(dt);
@@ -972,34 +1002,9 @@
                 ctx.save();
                 ctx.translate(shake.x, shake.y);
 
-
                 const player = engine.player;
                 const room = player?.room;
-                const roomKey = worldAssembly[room?.row]?.[room?.col];
-                const roomDef = roomTemplates[roomKey];
-                if (roomDef?.background) {
-                    const bgSprite = gfx.props.backdrops[roomDef.background];
-                    if (bgSprite) {
-                        // Background tiling
-                        const camera = engine.renderer.camera;
-                        const { x, y } = camera.worldToScreen(0, 0);
-
-                        const scaleX = (camera.tsz) / bgSprite.w;
-                        const scaleY = (camera.tsz) / bgSprite.h;
-
-                        ctx.save();
-                        ctx.imageSmoothingEnabled = false;
-                        ctx.translate(x, y);
-                        ctx.scale(scaleX, scaleY)
-                        
-                        for (let i = 0; i < room.width; i++) {
-                            for (let j = 0; j < room.height; j++) {
-                                bgSprite.draw(ctx, i * bgSprite.w, j * bgSprite.h, 1);
-                            }
-                        }
-                        ctx.restore();
-                    }
-                }
+                drawRoomBackground(ctx, room, engine.renderer.camera);
 
                 engine.tick(t, dt, events);
 
