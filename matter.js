@@ -6,6 +6,7 @@ const {
     MEntity,
     MPlayer,
     MEnemy,
+    MBoss,
     MEngine,
     MCheckpoint,
     MTeleportEntryPoint,
@@ -1408,6 +1409,11 @@ const {
             ctx.restore();
         }
     }
+
+    /** empty class meant to denote if an enemy is a boss
+     * 
+     */
+    class MBoss extends MEnemy {}
 
     /** MWorld class.
      *
@@ -3371,7 +3377,7 @@ const {
     }
 
     /** MMimic: enemy mimicking player, can throw spike balls à la MPlayer. */
-    class MMimic extends MEnemy {
+    class MMimic extends MBoss {
         static meleeRange = 5;
         static aggroRange = 14;
         static aimTime = 0.5;
@@ -3381,7 +3387,7 @@ const {
         constructor(x, y) {
             const sprites = gfx.enemies.mimic;
 
-            super(x, y, 0.97, 1.4, 100, (t, self) => {
+            super(x, y, 0.97, 1.4, 300, (t, self) => {
                 if (self._hitFlash > 0) return gfx.enemies.mimic.hurt;
                 const state = self.state ?? "idle";
                 const carryMap = {
@@ -3440,6 +3446,8 @@ const {
                 frame = Math.max(0, Math.min(count - 1, frame));
                 return frames[frame];
             });
+
+            this.name = "Mimic";
 
             this.sprites = sprites; /*
             this.patrolDir = 1;
@@ -3665,6 +3673,7 @@ const {
                 //push mimic out of any wall they landed in
                 const world = this.engine.world;
                 const t = this.touchingAll(MSolid, world);
+                const epsilon = this.engine.epsilon;
                 if (t) {
                     const colls = [];
                     for (const b of t) {
@@ -4037,7 +4046,7 @@ const {
 
     class MFlyer extends MEnemy {
         constructor(x, y) {
-            super(x, y, 0.9, 0.9, 40, (t, self) => {
+            super(x, y, 0.9, 0.9, 15, (t, self) => {
                 if (self._hitFlash > 0) return gfx.enemies.wingShroom.hit;
                 if (self.dead) {
                     const frames = gfx.enemies.wingShroom.die;
@@ -4561,8 +4570,7 @@ const {
     /**
      * MPacman
      */
-    class MPacman extends MEnemy {
-
+    class MPacman extends MBoss {
         //tune any of this if you want
         static deathAnimationTime = 3.0;
         static BOUNCE = 0.68;
@@ -5069,6 +5077,7 @@ const {
         MEntity,
         MPlayer,
         MEnemy,
+        MBoss,
         MEngine,
         MCheckpoint,
         MTeleportEntryPoint,
