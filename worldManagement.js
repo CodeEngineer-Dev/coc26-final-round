@@ -61,6 +61,7 @@ const roomTemplates = {
             // 'V': (x, y) => new MBreakWall(x, y, 'grassyBreakWall', 'right'),
             // 'U': (x, y) => new MBreakWall(x, y, 'mushroomBreakWall','right'),
         },
+        background: "dungeon"
     },
     B: {
         bitmap: [
