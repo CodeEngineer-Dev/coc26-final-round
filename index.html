@@ -115,6 +115,17 @@
                 footR = new AudioBuffer();
                 await footR.setBase64String("data:audio/mpeg;base64," + footstepSound);
                 footR.setVolume(0.3);
+
+                //override _createSource on both so they play once and auto-cleanup
+                for (const foot of [footL, footR]) {
+                    foot._createSource = function () {
+                        this.source = this.audioContext.createBufferSource();
+                        this.source.buffer = this.buffer;
+                        this.source.connect(this.gainNode);
+                        this.source.loop = false;
+                        this.source.onended = () => { this.source = null; };
+                    };
+                }
             } catch (e) {
                 console.error("failed to load footsteps:", e);
             }
@@ -122,19 +133,19 @@
 
         function playFootstep() {
             if (!footL || !footR || isMuted) return;
-            if (_stepFoot === 0) {
-                footL.play();
-            } else {
-                footR.play();
-            }
+            const foot = _stepFoot === 0 ? footL : footR;
             _stepFoot ^= 1;
+            //pause() nulls the source so play() always creates a fresh one-shot
+            foot.pause();
+            foot.play();
         }
 
         function tickFootsteps(dt, player) {
             if (!footL || !footR) return;
 
             const speed = Math.abs(player.xv);
-            const active = player.grounded && speed > 0.8;
+            //only fire when grounded an` actually moving horizontally
+            const active = player.grounded && player.state === "run";
 
             if (active) {
                 const interval = Math.max(0.15, 0.5 / speed);
