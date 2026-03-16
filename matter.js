@@ -4344,6 +4344,8 @@ const {
             if (Math.sqrt(dx * dx + dy * dy) <= MHatPoint.COLLECT_RADIUS) {
                 this.collected = true;
                 this.engine.hatPoints = (this.engine.hatPoints ?? 0) + 1;
+                //sounds
+                this.engine.onCoinCollect?.();
             }
         }
 

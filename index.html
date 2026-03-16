@@ -157,6 +157,29 @@
             } catch (e) { console.error("failed to load impact sound:", e); }
         }
 
+        let coinAudio = null;
+
+        async function initCoinSound() {
+            try {
+                coinAudio = new AudioBuffer();
+                await coinAudio.setBase64String(toDataURI(coinSound));
+                coinAudio.setVolume(0.6);
+                coinAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load coin sound:", e); }
+        }
+
+        function playCoinSound() {
+            if (!coinAudio || isMuted) return;
+            coinAudio.pause();
+            coinAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
@@ -213,11 +236,13 @@
                     gameAudio.setVolume(0);
                     footL?.setVolume(0);
                     footR?.setVolume(0);
+                    coinAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
                     footL?.setVolume(0.35);
                     footR?.setVolume(0.3);
+                    coinAudio?.setVolume(0.6);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -227,6 +252,7 @@
             if (!gameAudio) initAudio();
             if (!footL) initFootsteps();
             if (!impactAudio) initImpactSound();
+            if (!coinAudio) initCoinSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -256,6 +282,9 @@
 
         //for testing
         engine.renderer.debug = false;
+
+        //sound hooks
+        engine.onCoinCollect = () => playCoinSound();
 
         const shakes = [];
         const shake = { x: 0, y: 0 };
