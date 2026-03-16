@@ -140,11 +140,21 @@
             foot.play();
         }
 
-        function tickFootsteps(dt, player) {
+        let _prevPlayerState = null;
+
+        function tickSounds(dt, player) {
             if (!footL || !footR) return;
 
+            // jump sound on the frame state becomes "jump"
+            if (player.state === "jump" && _prevPlayerState !== "jump") {
+                if (jumpAudio && !isMuted) {
+                    jumpAudio.pause();
+                    jumpAudio.play();
+                }
+            }
+            _prevPlayerState = player.state;
+
             const speed = Math.abs(player.xv);
-            //only fire when grounded an` actually moving horizontally
             const active = player.grounded && player.state === "run";
 
             if (active) {
@@ -156,6 +166,25 @@
                 }
             } else {
                 _stepTimer = 0;
+            }
+        }
+
+        let jumpAudio = null;
+
+        async function initJumpSound() {
+            try {
+                jumpAudio = new AudioBuffer();
+                await jumpAudio.setBase64String("data:audio/mpeg;base64," + jumpSound);
+                jumpAudio.setVolume(0.5);
+                jumpAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) {
+                console.error("failed to load jump sound:", e);
             }
         }
 
@@ -198,10 +227,11 @@
             });
         }
 
-        // start both on first click
+        // start all on first click
         document.addEventListener("click", () => {
             if (!gameAudio) initAudio();
             if (!footL) initFootsteps();
+            if (!jumpAudio) initJumpSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -1165,7 +1195,7 @@
                 drawRoomBackground(ctx, room, engine.renderer.camera);
 
                 engine.tick(t, dt, events);
-                tickFootsteps(dt, engine.player);
+                tickSounds(dt, engine.player);
 
                 //hats - nevermore
                 //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
