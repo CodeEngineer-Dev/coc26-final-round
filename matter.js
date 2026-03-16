@@ -478,6 +478,7 @@ const {
                                 ? xt.hbox.x1 - this.w + this.hboxSmall - epsilon
                                 : xt.hbox.x2 - this.hboxSmall + epsilon;
                         this.xv *= -MBall.bounce;
+                        //this.engine.onBallBounce?.();
                     }
                 } else if (!(xt instanceof MBreakWall && xt._breaking)) {
                     this.x =
@@ -485,6 +486,7 @@ const {
                             ? xt.hbox.x1 - this.w + this.hboxSmall - epsilon
                             : xt.hbox.x2 - this.hboxSmall + epsilon;
                     this.xv *= -MBall.bounce;
+                    this.engine.onBallBounce?.(Math.abs(this.xv));
                 }
             }
 
@@ -503,6 +505,7 @@ const {
                     this.onGround = true;
                     if (Math.abs(this.yv) < 0.8) this.yv = 0;
                 }
+                this.engine.onBallBounce?.(Math.abs(this.yv));
             }
 
             //tick down per-enemy hit cooldowns
