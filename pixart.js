@@ -17,6 +17,7 @@ var palette = {
     o: [200, 127, 0, 255],
     p: [235, 235, 0, 255],
     q: [168, 0, 0, 127],
+	r: [80, 80, 100, 255],
 
 	A: [23, 16, 16, 255],
     B: [33, 25, 25, 255],
@@ -2207,15 +2208,15 @@ var gfxData = {
 	props: {
 		backdrops: {
 			forest: [
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
-				"mmmmmmmmm",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
+				"rrrrrrrrr",
 			],
 			underground: [
 				"BBBBBBBBB",
