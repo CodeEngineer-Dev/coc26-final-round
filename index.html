@@ -637,6 +637,29 @@
                 sprite.draw(ctx, -sw / 2, -sh / 2, pixel);
                 ctx.restore();
             }
+
+            ctx.save();
+            // MAKE THIS PIXEL
+            const bbwidth = effectiveWidth - 200;
+            let y = marginY;
+            engine.world.iterateRoom(engine.player.room, obj => {
+                if (obj instanceof MPacman) {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "bottom";
+                    ctx.font = "20px Arial"; // PIXEL
+                    ctx.fillText(obj.name, effectiveWidth / 2, y + 20);
+                    ctx.fillStyle = "#ff0000";
+                    ctx.strokeStyle = "black";
+                    ctx.lineWidth = 4;
+                    ctx.fillRect(100, y + 20, bbwidth * Math.max(obj.health, 0) / obj.maxHealth, 10);
+                    ctx.beginPath();
+                    ctx.roundRect(100, y + 20, bbwidth, 10, 5);
+                    ctx.stroke();
+                    y += 50;
+                }
+            })
+            ctx.restore();
         }
 
         //px per tile

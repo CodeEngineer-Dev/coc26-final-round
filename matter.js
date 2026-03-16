@@ -998,6 +998,9 @@ const {
             }
 
             this._wasGrounded = this.grounded;
+
+            this.health += dt * 5;
+            this.health = Math.min(this.health, this.maxHealth);
         }
 
         /** Renders the thing
@@ -4576,7 +4579,7 @@ const {
         static CHARGE_AIR_DELAY = 0.35;
 
         //construct it
-        constructor(x, y) {
+        constructor(x, y, name) {
             const W = 8, H = 8;
 
             super(x, y, W, H, 600, (t, self) => {
@@ -4626,6 +4629,8 @@ const {
 
             this.xv = (Math.random() < 0.5 ? 1 : -1) * 5;
             this.yv = -4;
+
+            this.name = name;
         }
 
         //supress parent ai
@@ -4830,7 +4835,7 @@ const {
                 this._diveCooldown   = MPacman.DIVE_COOLDOWN;
                 this._chargeCooldown = 1.0;
                 this._jumpCooldown   = 0.3;
-                player.health = 0;
+                player.health = -1;
             }
         }
         /**
@@ -4871,7 +4876,7 @@ const {
             player.y  = this.y + this.h / 2 - player.h / 2;
             if (player.room !== this.room) player.room = this.room;
             player.updateHitbox();
-            if (player.health < 1) player.health = 1;
+            player.health = 1;
         }
 
         _doJump(player) {

@@ -1556,7 +1556,7 @@ const roomTemplates = {
             "###############################################",
         ],
         entities: {
-            'X': (x, y) => new MPacman(x, y),
+            'X': (x, y) => new MPacman(x, y, "Fthwêržħwlbã't"),
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
         },
