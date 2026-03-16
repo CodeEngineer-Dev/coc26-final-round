@@ -1000,9 +1000,6 @@ const {
             }
 
             this._wasGrounded = this.grounded;
-
-            this.health += dt * 2.5;
-            this.health = Math.min(this.health, this.maxHealth);
         }
 
         /** Renders the thing
@@ -2112,16 +2109,20 @@ const {
             const player = this.engine?.player;
             if (!player) return;
 
-            if (this.state === "off") {
-                if (player.room !== this.room) return;
-                const dx = player.x + player.w / 2 - (this.x + 1);
-                const dy = player.y + player.h / 2 - (this.y + 2);
-                if (
-                    Math.sqrt(dx * dx + dy * dy) <= MCheckpoint.ACTIVATE_RADIUS
-                ) {
+            const dx = player.x + player.w / 2 - (this.x + 1);
+            const dy = player.y + player.h / 2 - (this.y + 2);
+            if (
+                Math.sqrt(dx * dx + dy * dy) <= MCheckpoint.ACTIVATE_RADIUS &&
+                player.room == this.room
+            ) {
+                if (this.state === "off") {
                     this._activate(player);
                 }
-            } else if (
+                player.health += 200 * dt;
+                player.health = Math.min(player.health, player.maxHealth);
+            }
+
+            if (
                 this.state === "lighting" &&
                 this.stateTime >= MCheckpoint.LIGHT_UP_DURATION
             ) {
@@ -4140,7 +4141,7 @@ const {
 
         onPlayerContact(player) {
             if (!player.groundPounding) {
-            const dx = player.x + player.w / 2 - (this.x + this.w / 2);
+                const dx = player.x + player.w / 2 - (this.x + this.w / 2);
                 player.xv = Math.sign(dx || 1) * 8;
                 player.yv = -5;
                 player.takeDamage(12);
@@ -4837,7 +4838,7 @@ const {
                 this._diveCooldown   = MPacman.DIVE_COOLDOWN;
                 this._chargeCooldown = 1.0;
                 this._jumpCooldown   = 0.3;
-                player.health = -1;
+                player.health = 0;
             }
         }
         /**
