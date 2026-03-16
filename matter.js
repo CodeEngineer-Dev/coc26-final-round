@@ -3665,6 +3665,7 @@ const {
                 //push mimic out of any wall they landed in
                 const world = this.engine.world;
                 const t = this.touchingAll(MSolid, world);
+                const epsilon = this.engine.epsilon;
                 if (t) {
                     const colls = [];
                     for (const b of t) {
