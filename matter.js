@@ -6,6 +6,7 @@ const {
     MEntity,
     MPlayer,
     MEnemy,
+    MBoss,
     MEngine,
     MCheckpoint,
     MTeleportEntryPoint,
@@ -1408,6 +1409,11 @@ const {
             ctx.restore();
         }
     }
+
+    /** empty class meant to denote if an enemy is a boss
+     * 
+     */
+    class MBoss extends MEnemy {}
 
     /** MWorld class.
      *
@@ -3371,7 +3377,7 @@ const {
     }
 
     /** MMimic: enemy mimicking player, can throw spike balls à la MPlayer. */
-    class MMimic extends MEnemy {
+    class MMimic extends MBoss {
         static meleeRange = 5;
         static aggroRange = 14;
         static aimTime = 0.5;
@@ -3440,6 +3446,8 @@ const {
                 frame = Math.max(0, Math.min(count - 1, frame));
                 return frames[frame];
             });
+
+            this.name = "Mimic";
 
             this.sprites = sprites; /*
             this.patrolDir = 1;
@@ -4562,8 +4570,7 @@ const {
     /**
      * MPacman
      */
-    class MPacman extends MEnemy {
-
+    class MPacman extends MBoss {
         //tune any of this if you want
         static deathAnimationTime = 3.0;
         static BOUNCE = 0.68;
@@ -5070,6 +5077,7 @@ const {
         MEntity,
         MPlayer,
         MEnemy,
+        MBoss,
         MEngine,
         MCheckpoint,
         MTeleportEntryPoint,
