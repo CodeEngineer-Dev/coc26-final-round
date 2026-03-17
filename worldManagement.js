@@ -886,7 +886,7 @@ const roomTemplates = {
             "",
             "",
             "                      T        ",
-            "                     BBBBBP    ",
+            "                     BBBBBV    ",
             "                  BBBBBBBBBBB  ",
             "                 BBBBBBBBBBBBBB",
             "               BBBbbbbbBBBBBBBB",
@@ -902,7 +902,7 @@ const roomTemplates = {
         entities: {
             'S': (x, y) => new MEnvironment(x, y, 'bush2'),
             'T': (x, y) => new MEnvironment(x, y, 'bush3'),
-            'P': (x, y) => new MEnvironment(x, y, 'rock3'),
+            'V': (x, y) => new MEnvironment(x, y, 'rock3'),
         },
         background: "forest"
     },
