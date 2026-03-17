@@ -985,7 +985,7 @@ const {
                         dx = this.x - enemy.hbox.x2;
                     }
                     const gauss = Math.exp(-dx * dx);
-                    enemy.takeDamage(this.groundPoundTime * 300 * gauss);
+                    enemy.takeDamage(this.groundPoundTime * 300 * gauss, "groundpound");
                     // knockback the enemies
                     enemy.yv -= 20 * gauss;
                     enemy.xv -= 50 * dx * gauss;
@@ -5080,6 +5080,11 @@ const {
             this._angle += (this.xv / (this.w * 0.5)) * dt;
             if (this.xv >  0.5) this.facing =  1;
             else if (this.xv < -0.5) this.facing = -1;
+
+            // delete spawned entities if player dies
+            if (player.health <= 0) {
+                this.room.entities = [this];
+            }
         }
 
         //rolling rn
@@ -5397,10 +5402,23 @@ const {
         }
 
         //dammage and death
-        takeDamage(amount) {
-            if (this.dead || this._pstate == 'chomping' || this._pstate == 'licking') return;
+        takeDamage(amount, source) {
+            if (
+                this.dead ||
+                this._pstate == 'chomping' ||
+                this._pstate == 'licking' ||
+                (source == "groundpound" && this.health <= this.maxHealth / 2)) return;
+            const prevHealth = this.health;
             this._hitFlash = 0.15;
             this.health   -= amount;
+            if (prevHealth > this.maxHealth / 2 && this.health <= this.maxHealth / 2) {
+                const w = this.room.width;
+                const h = this.room.height;
+                this.engine.world.addEntity(this.room, new MMimic(w / 3, h / 3));
+                this.engine.world.addEntity(this.room, new MMimic(w * 2 / 3, h / 3));
+                this.engine.world.addEntity(this.room, new MSwarmer(w / 3, h / 2, 4));
+                this.engine.world.addEntity(this.room, new MSwarmer(w * 2 / 3, h / 2, 4));
+            }
             if (this.health <= 0) this.die();
         }
 
@@ -5489,30 +5507,6 @@ const {
             w._chargingDive = data._chargingDive;
             w._chargeAirTimer = data._chargeAirTimer;
             w.contactCooldown = data.contactCooldown;
-            return w;
-        }
-
-        data() {
-            return {
-                x: this.x,
-                y: this.y,
-                sx: this.sx,
-                sy: this.sy,
-                xv: this.xv,
-                yv: this.yv,
-                roomrow: this.room.row,
-                roomcol: this.room.col,
-                name: this.name,
-            };
-        }
-
-        static fromData(data) {
-            const w = new MMimic(data.x, data.y);
-            w.sx = data.sx;
-            w.sy = data.sy;
-            w.xv = data.xv;
-            w.yv = data.yv;
-            w.room = this.engine.world.rooms[data.roomrow][data.roomcol];
             return w;
         }
     }
