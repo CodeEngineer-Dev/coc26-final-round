@@ -12,16 +12,17 @@ const { menui } = (() => {
         alreadyVertexed = true;
     };
     const bezierVertex = (a, b, c, d, e, f) => mictx.bezierCurveTo(a, b, c, d, e, f); // forgot parameter names lol
-    const pushMatrix = () => mictx.save();
+    let tfm;
+    const pushMatrix = () => tfm = mictx.getTransform();
     const translate = (x, y) => mictx.translate(x, y);
-    const rotate = (ang) => mictx.rotate(ang * 180 / Math.PI);
-    const popMatrix = () => mictx.restore();
+    const rotate = (ang) => mictx.rotate(ang * Math.PI / 180);
+    const popMatrix = () => mictx.setTransform(tfm);
     mictx.lineJoin = "round";
     mictx.fillStyle = "rgb(5, 193, 252)";
     mictx.fillRect(0, 0, 600, 600);
     for (var i = 0; i < 196; i++) {
         mictx.fillStyle = "#0000";
-        mictx.strokeStyle = `rgba(209, 170, 227, ${255 - i})`;
+        mictx.strokeStyle = `rgba(209, 170, 227, ${(255 - i) / 255})`;
         beginShape();
         mictx.rect(0, i, width, height);
         endShape();
@@ -375,7 +376,7 @@ const { menui } = (() => {
     vertex(572, 2);
     endShape();
     mictx.strokeStyle = `rgb(0, 0, 0)`;
-    ctx.lineWidth = 2;
+    mictx.lineWidth = 2;
     mictx.fillStyle = "rgb(255, 255, 255)";
     beginShape();
     vertex(127, 268);
@@ -562,7 +563,7 @@ const { menui } = (() => {
     vertex(513, 143);
     vertex(494, 143);
     endShape();
-    ctx.lineWidth = 3;
+    mictx.lineWidth = 3;
     mictx.strokeStyle = `rgb(255, 84, 84)`;
     mictx.fillStyle = "#0000";
     beginShape();
@@ -1021,12 +1022,12 @@ const { menui } = (() => {
     mictx.strokeStyle = "#0000";
     mictx.fillStyle = "#0000";
     for (var i = 0; i < 164; i += 2) {
-        mictx.strokeStyle = `rgba(0, 0, 0, ${30 - i / 3})`;
+        mictx.strokeStyle = `rgba(0, 0, 0, ${(30 - i / 3) / 255})`;
         beginShape();
         vertex(0, 262 + i);
         bezierVertex(53, 214 + i / 2, 155 - i / 2, 196 + i / 2, 178, 161);
         endShape();
-        mictx.strokeStyle = `rgba(0, 0, 0, ${50 - i / 3})`;
+        mictx.strokeStyle = `rgba(0, 0, 0, ${(50 - i / 3) / 255})`;
         beginShape();
         vertex(0, 262 - i);
         bezierVertex(53, 214 - i / 2, 155 - i, 196 - i / 2, 178 - i, 161 - i / 2);
@@ -1352,7 +1353,7 @@ const { menui } = (() => {
     endShape("close");
     mictx.strokeStyle = "#0000";
     for (var i = 0; i < 23; i++) {
-        mictx.fillStyle = "rgba(118, 8, 8, 15)";
+        mictx.fillStyle = `rgba(118, 8, 8, ${15 / 255})`;
         beginShape();
         vertex(305, 231);
         bezierVertex(275, 247, 281, 279, 298, 288);
@@ -1497,7 +1498,7 @@ const { menui } = (() => {
     endShape();
     mictx.fillStyle = "#0000";
     mictx.strokeStyle = `rgb(153, 153, 153)`;
-    ctx.lineWidth = 2;
+    mictx.lineWidth = 2;
     beginShape();
     vertex(142, 312);
     bezierVertex(105, 321, 88, 327, 70, 333);
@@ -1693,6 +1694,7 @@ const { menui } = (() => {
     endShape();
     mictx.strokeStyle = "#0000";
     mictx.fillStyle = "rgb(199, 112, 112)";
+    mictx.lineWidth = 2;
     beginShape();
     vertex(251, 550);
     bezierVertex(253, 547, 254, 547, 260, 546);
@@ -1705,7 +1707,7 @@ const { menui } = (() => {
     bezierVertex(255, 550, 253, 550, 251, 551);
     endShape();
     mictx.fillStyle = "#0000";
-    mictx.strokeStyle = `rgb(0)`;
+    mictx.strokeStyle = `rgb(0, 0, 0)`;
     beginShape();
     vertex(204, 406);
     bezierVertex(197, 411, 192, 416, 193, 421);
