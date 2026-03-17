@@ -5083,7 +5083,7 @@ const {
 
             // delete spawned entities if player dies
             if (player.health <= 0) {
-                this.room.entities = [this];
+                this.room.entities = [this, this.engine.player];
             }
         }
 
