@@ -1259,7 +1259,18 @@
                         scene = "game";
                     }
                     break;
+                case "thumb":
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(menui, 0, 0, effectiveWidth, effectiveHeight);
+                    minimapCanvas.style.display = "none";
+                    if (events.Mouse) {
+                        scene = "game";
+                    }
+                    break;
                 case "game":
+                    if (events.Backquote && !eventsPrev.Backquote) {
+                        scene = "thumb";
+                    }
                     minimapCanvas.style.display = "block";
                     //prefer the rAF timestamp when present
                     const now =

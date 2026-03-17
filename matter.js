@@ -1,6 +1,5 @@
-// TODO: engine for everything
-// TODO: sroom
-// TODO: health
+// JUDGES: if you were wondering what the unused data and static fromData functions are,
+// they were an attempt to do localStorage. We ran out of time.
 
 const {
     MDecorative,
