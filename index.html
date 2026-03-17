@@ -46,7 +46,7 @@
     <script type src="sounds.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
-        let scene = "menu";
+        let scene = "game";
         
         class AudioBuffer {
             /* 
@@ -251,6 +251,54 @@
             jumpAudio.play();
         }
 
+        let poundAudio = null;
+
+        async function initPoundSound() {
+            try {
+                poundAudio = new AudioBuffer();
+                await poundAudio.setBase64String(toDataURI(poundSound));
+                poundAudio.setVolume(0.4);
+                poundAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load pound sound: ", e); }
+        }
+
+        function playPoundSound() {
+            if (!poundAudio || isMuted) return;
+            poundAudio.setVolume(1)
+            poundAudio.pause();
+            poundAudio.play();
+        }
+
+        let hurtAudio = null;
+
+        async function initHurtSound() {
+            try {
+                hurtAudio = new AudioBuffer();
+                await hurtAudio.setBase64String(toDataURI(hurtSound));
+                hurtAudio.setVolume(0.4);
+                hurtAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load hurt sound: ", e); }
+        }
+
+        function playHurtSound() {
+            if (!hurtAudio || isMuted) return;
+            hurtAudio.setVolume(1)
+            hurtAudio.pause();
+            hurtAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
@@ -268,6 +316,7 @@
                     impactAudio.setVolume(vol * 0.25);
                     impactAudio.pause();
                     impactAudio.play();
+                    //playFootstep()
                 }
             }
             if (justJumped && jumpAudio && !isMuted) {
@@ -317,6 +366,8 @@
                     whooshAudio?.setVolume(0);
                     bounceAudio?.setVolume(0);
                     jumpAudio?.setVolume(0);
+                    poundAudio?.setVolume(0);
+                    hurtAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
@@ -326,6 +377,8 @@
                     whooshAudio?.setVolume(0.5);
                     bounceAudio?.setVolume(0.4);
                     jumpAudio?.setVolume(0.1);
+                    poundAudio?.setVolume(1);
+                    hurtAudio?.setVolume(1);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -339,6 +392,8 @@
             if (!whooshAudio) initWhooshSound();
             if (!bounceAudio) initBounceSound();
             if (!jumpAudio) initJumpSound();
+            if (!poundAudio) initPoundSound();
+            if (!hurtAudio) initHurtSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
@@ -534,7 +589,10 @@
 
         //make my life less stressful than it already is
         const addShake = (power) => shakes.push(new Shake(power));
-        engine.onGroundPound = () => addShake(10);
+        engine.onGroundPound = () => {
+            addShake(10);
+            playPoundSound();
+        };
         engine.groundPoundMult = 2;
         engine.hatPoints = 0;
 
