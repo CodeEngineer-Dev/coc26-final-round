@@ -1603,7 +1603,8 @@ const roomTemplates = {
             "[": (x, y) => new MGauntletDoor(x, y - 2.5, "left"),
             "]": (x, y) => new MGauntletDoor(x, y - 2.5, "right"),
         },
-        background: "dungeon"
+        background: "dungeon",
+        final: true,
     },
     6: {
         bitmap: [

@@ -1532,6 +1532,7 @@ const {
                             height: 0,
                             row: parseFloat(row),
                             col: parseFloat(col),
+                            final: false,
                         });
 
                         const room = this.rooms[row][col];
@@ -1552,6 +1553,7 @@ const {
                         const { width, height } = this.build(room, bitmap, tileMap);
                         room.width = width;
                         room.height = height;
+                        room.final = roomDef.final;
 
                         if (typeof PlatformGraph !== "undefined") {
                             room.graph = new PlatformGraph(
@@ -1755,6 +1757,10 @@ const {
                     entity._roomChangedThisFrame = true;
                     this.engine.onRoomChange?.(dir);
                 }
+            }
+
+            if (entity == this.engine.player && entity.room.final == true) {
+                this.engine.infinalfight = true;
             }
         }
 
@@ -5080,7 +5086,6 @@ const {
             ) {
                 this.health = this.maxHealth;
                 this.room.entities = this.room.entities.filter(obj => !(obj instanceof MEnemy) || obj instanceof MPacman);
-                this.engine.infinalfight = true;
                 this._hitFlash = 0;
                 if (this._pstate === 'chomping' || this._pstate === 'licking') {
                     this._pstate = 'rolling';
