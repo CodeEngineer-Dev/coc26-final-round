@@ -863,13 +863,8 @@ const roomTemplates = {
             "                                  ",
             "      LLG bbbbb  G                 ",
             "      BBBbbbbbbbBBbbb  BB          ",
-<<<<<<< HEAD
-            "  P   BBBBbbbbbbBBBBbbbbb   LLSLVGG",
+            "      BBBBbbbbbbBBBBbbbbb   LLSLVGG",
             "lJllGlBBBBBbbbbBBBBBBbbbbbbbBBBBBBBB",
-=======
-            "      BBBBbbbbbbBBBBbbbbb     S V  ",
-            " J   BBBBBbbbbBBBBBBbbbbbbbBBBBBBBB",
->>>>>>> 86673a5d43f38e9e89259ec63e1181e5c603f93f
             "BBBBBBBBBBBBBBBBBBBBbbbbBBBBBBBBBBB",
             "BBBBBBBBBBBBBBBBBBBBbbbBBBBBBBBBBBB",
             "BBBBBBBBBBBBBBBBBBBBMbbbbbbBBBBBBBB",
