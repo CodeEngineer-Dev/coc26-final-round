@@ -616,13 +616,13 @@ const {
             };
 
             // tmp for dev
-            this.powers = {
-                ball: true,
-                groundedTeleport: true,
-                groundPound: true,
-                fullTeleport: true,
-                wallJump: true,
-            };
+            // this.powers = {
+            //     ball: true,
+            //     groundedTeleport: true,
+            //     groundPound: true,
+            //     fullTeleport: true,
+            //     wallJump: true,
+            // };
             this._hitFlash = 0;
 
             this.wallSliding = false;
