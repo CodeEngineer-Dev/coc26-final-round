@@ -834,7 +834,7 @@ const roomTemplates = {
             "BBBBBBBBBBBBBBBBBBBBBBBBbbbbBBBBBBB",
         ],
         entities: {
-            'E': (x, y) => new MEnvironment(x, y, 'bush1'),
+            'J': (x, y) => new MEnvironment(x, y, 'bush1'),
             'E': (x, y) => new MBlob(x, y, 'g2'),
             'e': (x, y) => new MBlob(x, y, 'g1'),
             'S': (x, y) => new MNPC(x, y - 0.5, [
