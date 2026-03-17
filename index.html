@@ -980,7 +980,6 @@
             }
 
             ctx.save();
-            // MAKE THIS PIXEL
             const bbwidth = effectiveWidth - 200;
             let y = marginY;
             engine.world.iterateRoom(engine.player.room, obj => {
@@ -988,7 +987,7 @@
                     ctx.fillStyle = "#ffffff";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "bottom";
-                    ctx.font = "20px Arial"; // PIXEL
+                    ctx.font = "bold 20px Exo"; // PIXEL
                     ctx.fillText(obj.name, effectiveWidth / 2, y + 20);
                     ctx.fillStyle = "#ff0000";
                     ctx.strokeStyle = "black";
@@ -1236,8 +1235,24 @@
             switch (scene) {
                 case "menu":
                     ctx.clearRect(0, 0, width, height);
-                    ctx.drawImage(menui, 0, 0);
+                    ctx.drawImage(menui, 0, 0, effectiveWidth, effectiveHeight);
                     minimapCanvas.style.display = "none";
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.01)";
+                    for (let i = 0; i < 20; i += 2) {
+                        ctx.fillRect(
+                            effectiveWidth / 2 - 100 - i,
+                            effectiveHeight * 7 / 10 - 35 - i,
+                            200 + 2 * i, 70 + 2 * i
+                        );
+                    }
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "center";
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "bold 50px Exo"; // PIXEL
+                    ctx.fillText("- Play -", effectiveWidth / 2, effectiveHeight * 7 / 10 + 10);
+                    if (events.Mouse) {
+                        scene = "game";
+                    }
                     break;
                 case "game":
                     minimapCanvas.style.display = "block";
