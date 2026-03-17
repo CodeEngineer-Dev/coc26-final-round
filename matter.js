@@ -1,6 +1,5 @@
-// TODO: engine for everything
-// TODO: sroom
-// TODO: health
+// JUDGES: if you were wondering what the unused data and static fromData functions are,
+// they were an attempt to do localStorage. We ran out of time.
 
 const {
     MDecorative,
@@ -524,27 +523,29 @@ const {
                 else this._hitCooldowns.set(enemy, remaining);
             }
 
-            //enemy collision bounce and deal damage
-            let hitEnemies = this.touchingAll(MEnemy, world);
-            if (this.hbox.collision(this.engine.player)) {
-                hitEnemies.push(this.engine.player);
-            }
-            hitEnemies = hitEnemies.filter((e) => e != this.owner);
-            for (const enemy of hitEnemies) {
-                if (enemy.dead || this._hitCooldowns.has(enemy)) continue;
-
-                //reflect whichever axis has less overlap (same logic as solid)
-                const dx = this.x + this.w / 2 - (enemy.x + enemy.w / 2);
-                const dy = this.y + this.h / 2 - (enemy.y + enemy.h / 2);
-                if (Math.abs(dx) >= Math.abs(dy)) {
-                    this.xv *= -MBall.bounce;
-                } else {
-                    this.yv *= -MBall.bounce;
+            if (!this.owner.carrying) {
+                //enemy collision bounce and deal damage
+                let hitEnemies = this.touchingAll(MEnemy, world);
+                if (this.hbox.collision(this.engine.player)) {
+                    hitEnemies.push(this.engine.player);
                 }
+                hitEnemies = hitEnemies.filter((e) => e != this.owner);
+                for (const enemy of hitEnemies) {
+                    if (enemy.dead || this._hitCooldowns.has(enemy)) continue;
 
-                enemy.takeDamage(30);
-                //grace peroid is 300ms
-                this._hitCooldowns.set(enemy, 0.3);
+                    //reflect whichever axis has less overlap (same logic as solid)
+                    const dx = this.x + this.w / 2 - (enemy.x + enemy.w / 2);
+                    const dy = this.y + this.h / 2 - (enemy.y + enemy.h / 2);
+                    if (Math.abs(dx) >= Math.abs(dy)) {
+                        this.xv *= -MBall.bounce;
+                    } else {
+                        this.yv *= -MBall.bounce;
+                    }
+
+                    enemy.takeDamage(30);
+                    //grace peroid is 300ms
+                    this._hitCooldowns.set(enemy, 0.3);
+                }
             }
 
             //spin proportional to horizontal speed
@@ -722,6 +723,7 @@ const {
             }
             if (this.ball) this.carrying = true;
             this.groundPounding = false;
+            this.engine.infinalfight = false;
         }
 
         /** Tick the game forward
@@ -1024,6 +1026,14 @@ const {
             }
 
             this._wasGrounded = this.grounded;
+
+            if (this.engine.infinalfight) {
+                if (this.room.entities.filter(obj => obj instanceof MEnemy).length == 0) {
+                    // stop speedrun timer
+                    this.engine.tstp = true;
+                    this.engine.infinalfight = false;
+                }
+            }
         }
 
         /** Renders the thing
@@ -1512,6 +1522,7 @@ const {
                             height: 0,
                             row: parseFloat(row),
                             col: parseFloat(col),
+                            final: false,
                         });
 
                         const room = this.rooms[row][col];
@@ -1533,6 +1544,7 @@ const {
                         room.width = width;
                         room.height = height;
                         room.soundtrack = roomDef.soundtrack ?? null;
+                        room.final = roomDef.final;
 
                         if (typeof PlatformGraph !== "undefined") {
                             room.graph = new PlatformGraph(
@@ -1736,6 +1748,10 @@ const {
                     entity._roomChangedThisFrame = true;
                     this.engine.onRoomChange?.(dir);
                 }
+            }
+
+            if (entity == this.engine.player && entity.room.final == true) {
+                this.engine.infinalfight = true;
             }
         }
 
@@ -2034,6 +2050,11 @@ const {
                     },
                 );
             }
+            ctx.textAlign = "right";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 50px Inconsolata";
+            ctx.fillText(this.engine.timer.toFixed(2), effectiveWidth - 20, 20);
         }
     }
 
@@ -2058,6 +2079,9 @@ const {
             this.slowMoScale = 0.15; // how slow "slow" is lol
             this.renderer = null;
             this.world = new MWorld(this);
+            this.timer = 0;
+            this.infinalfight = false;
+            this.tstp = false;
         }
 
         /** Alternative to new MEngine.
@@ -2104,6 +2128,8 @@ const {
          * @returns {void}
          */
         tick(t, dt, events) {
+            if (!this.tstp) this.timer += dt;
+
             //for the slowmo effect with the ball
             if (this.slowMo) dt *= this.slowMoScale;
             this.events = events;
@@ -4968,7 +4994,7 @@ const {
         constructor(x, y, name) {
             const W = 8, H = 8;
 
-            super(x, y, W, H, 600, (t, self) => {
+            super(x, y, W, H, 480, (t, self) => {
                 if (self._hitFlash > 0) return gfx.enemies.bosses.landlord.idle[0];
 
                 switch (self._pstate) {
@@ -5050,6 +5076,7 @@ const {
                 player.health >= player.maxHealth
             ) {
                 this.health = this.maxHealth;
+                this.room.entities = this.room.entities.filter(obj => !(obj instanceof MEnemy) || obj instanceof MPacman);
                 this._hitFlash = 0;
                 if (this._pstate === 'chomping' || this._pstate === 'licking') {
                     this._pstate = 'rolling';
@@ -5070,13 +5097,8 @@ const {
             }
 
             this._angle += (this.xv / (this.w * 0.5)) * dt;
-            if (this.xv >  0.5) this.facing =  1;
+            if (this.xv > 0.5) this.facing =  1;
             else if (this.xv < -0.5) this.facing = -1;
-
-            // delete spawned entities if player dies
-            if (player.health <= 0) {
-                this.room.entities = [this, this.engine.player];
-            }
         }
 
         //rolling rn
