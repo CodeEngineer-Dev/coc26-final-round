@@ -55,7 +55,7 @@
     <script type src="fullscreen.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
-        let scene = "menu";
+        let scene = "loading";
         
         class AudioBuffer {
             /* 
@@ -362,6 +362,8 @@
             "Shostakovich": quartetNo8IIFile
         };
         let currentlyPlayingSoundtrack = null;
+        let loadedSoundtracks = false;
+        let soundsLoaded = 0;
 
         async function initAudio() {
             gameAudio = new AudioBuffer();
@@ -376,13 +378,13 @@
                     audio[i] = new AudioBuffer();
                     await audio[i].setBase64String(toDataURI(soundtrackAudio[i]));
                     audio[i].setVolume(1);
+                    soundsLoaded++;
                 }
 
                 soundtrackAudio = audio;
+                loadedSoundtracks = true;
             } catch (e) { console.error("failed to load audio:", e); }
         }
-
-        console.log(soundtrackAudio)
 
         const audioButton = document.getElementById("audio");
         if (audioButton) {
@@ -890,7 +892,6 @@
 
             roomTransition.start(dir);
 
-            console.log(soundtrackAudio)
             if (engine.player.room.soundtrack !== currentlyPlayingSoundtrack) {
                 for (let i in soundtrackAudio) { soundtrackAudio[i].pause(); }
                 if (engine.player.room.soundtrack) {
@@ -1271,9 +1272,26 @@
             t,
             fps;
 
+        initAudio();
         //a render loop with a timestamp for dt updating
         const render = (timestamp) => {
             switch (scene) {
+                case "loading":
+                    
+
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "center";
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "bold 50px Exo"; // PIXEL
+                    ctx.fillText("- loading audio -", effectiveWidth / 2, effectiveHeight * 7 / 10 + 10);
+                    ctx.fillText(soundsLoaded + "/5 loaded", effectiveWidth / 2, effectiveHeight * 7 / 10 + 80);
+                    
+                    if (loadedSoundtracks) {
+                        scene = "menu";
+                    }
+
+                break;
                 case "menu":
                     ctx.clearRect(0, 0, width, height);
                     ctx.drawImage(menui, 0, 0, effectiveWidth, effectiveHeight);
