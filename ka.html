@@ -20,7 +20,349 @@
     <!--The page title-->
     <title>New webpage</title>
     <!--CSS Styling-->
-    <link rel="stylesheet" href="style.css" />
+    <style>
+      * {
+        transition: 0s;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      script {
+        font-family: Pixelify Sans;
+        color: black;
+      }
+      body {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        align-items: center;
+        transition: 0s;
+        background: #000;
+        display: flex;
+        justify-content: center;
+      }
+      a {
+        display: inline-block;
+        position: relative;
+        color: rgb(255, 255, 255);
+        text-decoration: none;
+      }
+
+      a::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        bottom: 0;
+        left: 0;
+        background-color: rgb(255, 255, 255);
+        visibility: hidden;
+        transform: scaleX(0);
+        transition: all 0.3s ease-in-out 0s;
+      }
+
+      a:hover::before {
+        visibility: visible;
+        transform: scaleX(1);
+      }
+
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        height: 100vh;
+        width: auto;
+        display: block;
+      }
+
+      canvas:focus {
+        outline: none;
+      }
+
+      #container {
+        position: relative;
+        color: black;
+        height: 100vh;
+        aspect-ratio: auto;
+      }
+
+      #container canvas,
+      #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: auto;
+      }
+
+      #fullscreen-container {
+        position: fixed;
+        right: 5px;
+        top: 5px;
+        left: auto;
+      }
+
+      #fullscreen {
+        color: white;
+        font-size: 28px;
+        border-radius: 50%;
+        padding: 5px;
+        box-sizing: border-box;
+        cursor: pointer;
+        transition: 200ms;
+        position: relative;
+        float: right;
+      }
+      #fullscreen:hover {
+        background: #fff2;
+      }
+
+      #console {
+        color: white;
+        margin: 5px;
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.06);
+        font-family: monospace;
+        box-sizing: border-box;
+        padding: 6px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      #console pre {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+      #console .line {
+        color: #ddd;
+      }
+      #console .error {
+        color: #ff4d4d;
+        font-weight: 700;
+      }
+      #console .warn {
+        color: #ffb86b;
+      }
+      #console .info {
+        color: #9ad0ff;
+      }
+
+      .npc-bubble {
+        position: absolute;
+        transform: translateX(-50%) translateY(-100%);
+        margin-top: -12px;
+
+        background: #fff8e7;
+        border: 3px solid #2a1a1a;
+        border-radius: 6px;
+        padding: 8px 14px 10px;
+        max-width: 220px;
+        min-width: 80px;
+        text-align: center;
+
+        font-family: "Exo", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #2a1a1a;
+        line-height: 1.4;
+
+        box-shadow: 3px 3px 0 #2a1a1a;
+        pointer-events: none;
+        z-index: 20;
+        transition: opacity 0.1s;
+      }
+
+      .npc-bubble::before {
+        content: "";
+        position: absolute;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 7px solid transparent;
+        border-top-color: #2a1a1a;
+      }
+
+      .npc-bubble::after {
+        content: "";
+        position: absolute;
+        bottom: -9px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #fff8e7;
+        z-index: 1;
+      }
+
+      .npc-bubble .npc-progress {
+        display: block;
+        margin-top: 5px;
+        font-size: 10px;
+        color: #9a7a5a;
+        letter-spacing: 0.05em;
+      }
+
+      .npc-prompt {
+        position: absolute;
+        transform: translateX(-50%) translateY(-100%);
+        font-family: "Exo", sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        background: #2a1a1a;
+        border: 2px solid #fff8e7;
+        border-radius: 4px;
+        padding: 1px 5px;
+        pointer-events: none;
+        z-index: 19;
+        white-space: nowrap;
+      }
+
+      #minimap {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 180px;
+        height: 140px;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        z-index: 15;
+        opacity: 0.88;
+        pointer-events: auto;
+        cursor: grab;
+        width: auto !important;
+        height: auto !important;
+      }
+      #minimap.dragging {
+        cursor: grabbing;
+      }
+      #minimap-label {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        transform: translateY(-100%);
+        font-family: monospace;
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+        z-index: 15;
+      }
+
+      .hat-shop {
+        position: absolute;
+        transform: translateX(-50%) translateY(-100%);
+        margin-top: -12px;
+
+        background: #fff8e7;
+        border: 3px solid #2a1a1a;
+        border-radius: 6px;
+        padding: 10px 14px 12px;
+        min-width: 210px;
+
+        font-family: "Exo", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #2a1a1a;
+        line-height: 1.4;
+
+        box-shadow: 3px 3px 0 #2a1a1a;
+        pointer-events: all;
+        z-index: 20;
+      }
+
+      /* Same tail arrow as .npc-bubble */
+      .hat-shop::before {
+        content: "";
+        position: absolute;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 7px solid transparent;
+        border-top-color: #2a1a1a;
+      }
+
+      .hat-shop::after {
+        content: "";
+        position: absolute;
+        bottom: -9px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #fff8e7;
+        z-index: 1;
+      }
+
+      .hat-shop-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #2a1a1a;
+        text-align: center;
+        margin-bottom: 4px;
+        letter-spacing: 0.02em;
+      }
+
+      .hat-shop-pts {
+        color: #9a7a5a;
+        text-align: center;
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+
+      .hat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(42, 26, 26, 0.15);
+      }
+      .hat-row:last-child {
+        border-bottom: none;
+      }
+      .hat-row-equipped {
+        color: #7a4a00;
+        font-weight: 700;
+      }
+
+      .hat-name {
+        flex: 1;
+      }
+
+      .hat-btn {
+        background: rgba(42, 26, 26, 0.07);
+        border: 2px solid #2a1a1a;
+        color: #2a1a1a;
+        font-family: "Exo", sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.1s;
+        line-height: 1.5;
+        white-space: nowrap;
+      }
+      .hat-btn:hover:not(:disabled) {
+        background: rgba(42, 26, 26, 0.18);
+      }
+      .hat-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .hat-btn-equipped {
+        background: rgba(42, 26, 26, 0.14);
+        border-color: #2a1a1a;
+        color: #7a4a00;
+      }
+
+      .hat-shop-hint {
+        text-align: center;
+        color: #9a7a5a;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        margin-top: 7px;
+      }
+    </style>
   </head>
   <body>
     <!--The container for the entire thing-->
@@ -17375,23 +17717,23 @@
       },
       u: {
         bitmap: [
-            "#################@@@@####################",
-            "###########@@@@@@@@@@@@@@@@##############",
-            "##########@@@@@@@@@@@@@@@@@@#############",
-            "#########@@@@@@        @@@@@@############",
-            "#########@@@@@   #  #   @@@@@@@@@@@@@@###",
-            "#########@@@@@   ####   @@@@@@@@@@@@@@@##",
-            "#########@@@@            @@@@@@@@@@@@@@##",
-            "#########@@@@          ] @@@@@@@@@@@@@@##",
-            "#########@@@@            @@@@@######@@@##",
-            "#########@@@@            @@@@@####@@@@@##",
-            "#########@@@@ Y          @@@@@####@@@@###",
-            "##########@@@    ####   @@@@@#####@@@@@@#",
-            "##########@@@    ####    @@@@#######@@@@#",
-            "##################################@@@@@@#",
-            "##################################@@@@@##",
-            "##################################@@@@@##",
-            "###################################@@@###",
+          "#################@@@@####################",
+          "###########@@@@@@@@@@@@@@@@##############",
+          "##########@@@@@@@@@@@@@@@@@@#############",
+          "#########@@@@@@        @@@@@@############",
+          "#########@@@@@   #  #   @@@@@@@@@@@@@@###",
+          "#########@@@@@   ####   @@@@@@@@@@@@@@@##",
+          "#########@@@@            @@@@@@@@@@@@@@##",
+          "#########@@@@          ] @@@@@@@@@@@@@@##",
+          "#########@@@@            @@@@@######@@@##",
+          "#########@@@@            @@@@@####@@@@@##",
+          "#########@@@@ Y          @@@@@####@@@@###",
+          "##########@@@    ####   @@@@@#####@@@@@@#",
+          "##########@@@    ####    @@@@#######@@@@#",
+          "##################################@@@@@@#",
+          "##################################@@@@@##",
+          "##################################@@@@@##",
+          "###################################@@@###",
         ],
         entities: {
           "[": (x, y) => new MGauntletDoor(x - 4, y - 2.5, "left"),
