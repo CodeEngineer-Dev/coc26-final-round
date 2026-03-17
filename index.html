@@ -228,12 +228,36 @@
             bounceAudio.play();
         }
 
+        let jumpAudio = null;
+
+        async function initJumpSound() {
+            try {
+                jumpAudio = new AudioBuffer();
+                await jumpAudio.setBase64String(toDataURI(jumpSound));
+                jumpAudio.setVolume(0.4);
+                jumpAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load jump sound: ", e); }
+        }
+
+        function playJumpSound() {
+            if (!jumpAudio || isMuted) return;
+            jumpAudio.pause();
+            jumpAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
         function tickSounds(dt, player, preTickYv) {
             const wasAirborne = _prevPlayerState === "fall" || _prevPlayerState === "jump" || _prevPlayerState === "wallslide";
             const justLanded  = wasAirborne && (player.state === "idle" || player.state === "run");
+            const justJumped = _prevPlayerState !== "jump" && player.state === "jump"
 
             if (justLanded && impactAudio && !isMuted) {
                 const minYv = 5;
@@ -241,10 +265,15 @@
                 // _prevPreTickYv is from the actual landing frame, not this frame
                 const vol = Math.min(1.0, Math.max(0.0, (_prevPreTickYv - minYv) / (maxYv - minYv)));
                 if (vol > 0) {
-                    impactAudio.setVolume(vol * 0.5);
+                    impactAudio.setVolume(vol * 0.25);
                     impactAudio.pause();
                     impactAudio.play();
                 }
+            }
+            if (justJumped && jumpAudio && !isMuted) {
+                jumpAudio.setVolume(0.1)
+                jumpAudio.pause();
+                jumpAudio.play();
             }
 
             _prevPlayerState = player.state;
@@ -287,6 +316,7 @@
                     coinAudio?.setVolume(0);
                     whooshAudio?.setVolume(0);
                     bounceAudio?.setVolume(0);
+                    jumpAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
@@ -295,6 +325,7 @@
                     coinAudio?.setVolume(0.6);
                     whooshAudio?.setVolume(0.5);
                     bounceAudio?.setVolume(0.4);
+                    jumpAudio?.setVolume(0.1);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -307,6 +338,7 @@
             if (!coinAudio) initCoinSound();
             if (!whooshAudio) initWhooshSound();
             if (!bounceAudio) initBounceSound();
+            if (!jumpAudio) initJumpSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
