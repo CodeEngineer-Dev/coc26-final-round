@@ -46,7 +46,7 @@
     <script type src="sounds.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
-        let scene = "menu";
+        let scene = "game";
         
         class AudioBuffer {
             /* 
@@ -275,6 +275,30 @@
             poundAudio.play();
         }
 
+        let hurtAudio = null;
+
+        async function initHurtSound() {
+            try {
+                hurtAudio = new AudioBuffer();
+                await hurtAudio.setBase64String(toDataURI(hurtSound));
+                hurtAudio.setVolume(0.4);
+                hurtAudio._createSource = function () {
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.buffer;
+                    this.source.connect(this.gainNode);
+                    this.source.loop = false;
+                    this.source.onended = () => { this.source = null; };
+                };
+            } catch (e) { console.error("failed to load hurt sound: ", e); }
+        }
+
+        function playHurtSound() {
+            if (!hurtAudio || isMuted) return;
+            hurtAudio.setVolume(1)
+            hurtAudio.pause();
+            hurtAudio.play();
+        }
+
         let _prevPlayerState = null;
         let _prevPreTickYv = 0;
 
@@ -343,6 +367,7 @@
                     bounceAudio?.setVolume(0);
                     jumpAudio?.setVolume(0);
                     poundAudio?.setVolume(0);
+                    hurtAudio?.setVolume(0);
                     audioButton.textContent = "volume_off";
                 } else {
                     gameAudio.setVolume(1);
@@ -353,6 +378,7 @@
                     bounceAudio?.setVolume(0.4);
                     jumpAudio?.setVolume(0.1);
                     poundAudio?.setVolume(1);
+                    hurtAudio?.setVolume(1);
                     audioButton.textContent = "volume_up";
                 }
             });
@@ -367,6 +393,7 @@
             if (!bounceAudio) initBounceSound();
             if (!jumpAudio) initJumpSound();
             if (!poundAudio) initPoundSound();
+            if (!hurtAudio) initHurtSound();
         }, { once: true });
 
         function drawRoomBackground(ctx, room, camera) {
