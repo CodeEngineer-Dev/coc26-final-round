@@ -44,6 +44,11 @@
     <script type src="userinput.js"></script>
     <script type src="worldManagement.js"></script>
     <script type src="sounds.js"></script>
+    <script type src="vocalise.js"></script>
+    <script type src="proko-toccata.js"></script>
+    <script type src="gnossienne-1.js"></script>
+    <script type src="butterfly.js"></script>
+    <script type src="quartet-shostakovich.js"></script>
     <script type src="fullscreen.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
@@ -346,14 +351,35 @@
         let gameAudio = null;
         let isMuted = false;
 
+        let soundtrackAudio = {
+            "Satie": gnossienneNo1File,
+            "Grieg": butterflyFile,
+            "Prokofiev": toccataDMinorFile,
+            "Rachmaninoff": vocaliseBackgroundFile,
+            "Shostakovich": quartetNo8IIFile
+        };
+        let currentlyPlayingSoundtrack = null;
+
         async function initAudio() {
             gameAudio = new AudioBuffer();
             try {
-                await gameAudio.setBase64String(toDataURI(dungeonMusic));
-                gameAudio.setVolume(1);
-                gameAudio.play();
+                //await gameAudio.setBase64String(toDataURI(butterflyFile));
+                //gameAudio.setVolume(1);
+                //gameAudio.play();
+
+                let audio = {};
+
+                for (let i in soundtrackAudio) {
+                    audio[i] = new AudioBuffer();
+                    await audio[i].setBase64String(toDataURI(soundtrackAudio[i]));
+                    audio[i].setVolume(1);
+                }
+
+                soundtrackAudio = audio;
             } catch (e) { console.error("failed to load audio:", e); }
         }
+
+        console.log(soundtrackAudio)
 
         const audioButton = document.getElementById("audio");
         if (audioButton) {
@@ -860,6 +886,16 @@
             ctx.drawImage(roomTransition.snap, 0, 0);
 
             roomTransition.start(dir);
+
+            console.log(soundtrackAudio)
+            if (engine.player.room.soundtrack !== currentlyPlayingSoundtrack) {
+                for (let i in soundtrackAudio) { soundtrackAudio[i].pause(); }
+                if (engine.player.room.soundtrack) {
+                    soundtrackAudio[engine.player.room.soundtrack].setVolume(1);
+                    soundtrackAudio[engine.player.room.soundtrack].play();
+                }
+                currentlyPlayingSoundtrack = engine.player.room.soundtrack || null;
+            }
         };
 
         /** HUD

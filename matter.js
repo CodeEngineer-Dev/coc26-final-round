@@ -613,15 +613,6 @@ const {
                 fullTeleport: false,
                 wallJump: false,
             };
-
-            // tmp for dev
-            this.powers = {
-                ball: true,
-                groundedTeleport: true,
-                groundPound: true,
-                fullTeleport: true,
-                wallJump: true,
-            };
             this._hitFlash = 0;
 
             this.wallSliding = false;
@@ -1541,6 +1532,7 @@ const {
                         const { width, height } = this.build(room, bitmap, tileMap);
                         room.width = width;
                         room.height = height;
+                        room.soundtrack = roomDef.soundtrack ?? null;
 
                         if (typeof PlatformGraph !== "undefined") {
                             room.graph = new PlatformGraph(
