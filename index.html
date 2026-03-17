@@ -39,13 +39,15 @@
     <script type src="canvas.js"></script>
     <!--<script type src="console.js"></script>-->
     <script type src="pixart.js"></script>
+    <script type src="menuart.js"></script>
     <script type src="matter.js"></script>
     <script type src="userinput.js"></script>
     <script type src="worldManagement.js"></script>
     <script type src="sounds.js"></script>
     <!-- screw all the code i couldnt understand, i will completely redo it -->
     <script type>
-
+        let scene = "menu";
+        
         class AudioBuffer {
             /* 
                 Created by Arrow
@@ -1141,139 +1143,119 @@
 
         //a render loop with a timestamp for dt updating
         const render = (timestamp) => {
-            //try {
-            //prefer the rAF timestamp when present
-            const now =
-                typeof timestamp === "number" ? timestamp : performance.now();
+            switch (scene) {
+                case "menu":
+                    ctx.drawImage(menui, 0, 0);
+                    break;
+                case "game":
+                    //prefer the rAF timestamp when present
+                    const now =
+                        typeof timestamp === "number" ? timestamp : performance.now();
 
-            //dt in milliseconds, never negative
-            dtMs = Math.max(0, now - lastTime);
-            tMs = Math.max(0, now - firstTime);
+                    //dt in milliseconds, never negative
+                    dtMs = Math.max(0, now - lastTime);
+                    tMs = Math.max(0, now - firstTime);
 
-            lastTime = now;
+                    lastTime = now;
 
-            //dt in seconds (clamped to avoid huge jumps after tab hidden)
-            dt = Math.min(dtMs / 1000, 0.1);
-            t = tMs / 1000;
-            fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
+                    //dt in seconds (clamped to avoid huge jumps after tab hidden)
+                    dt = Math.min(dtMs / 1000, 0.1);
+                    t = tMs / 1000;
+                    fps = dtMs > 0 ? Math.round(1000 / dtMs) : fps;
 
-            //peek at whether a room change is about to happen
-            //const pendingDir = world.getPendingDir();
-
-            //iif so: render the old room (no player!) into the snapshot
-            /*if (pendingDir) {
-                    ctx.fillStyle = "rgb(100, 100, 100)";
-                    ctx.fillRect(0, 0, width, height);
-                    engine.renderer.renderScene(t);
-                    roomTransition.capture(canvas);
-                }*/
-
-            //clear for real this frame
-            ctx.fillStyle = "rgb(20, 30, 20)";
-            ctx.fillRect(0, 0, width / dprVal, height / dprVal);
-
-            //chrome be tripping yall
-            ctx.imageSmoothingEnabled = false;
-
-            //transistion delay for room swap
-            /*world._transitionCooldown = Math.max(0, world._transitionCooldown - dt);
-                world.execute(engine.player);
-
-
-                //execute room load (uses _pending already set above)
-                world.execute(engine.player);
-                if (pendingDir) roomTransition.start(pendingDir);*/
-
-            //tick transition an' shake
-            //roomTransition.tick(dt);
-            shakes.forEach((s, i) => s.active(i));
-
-            if (roomTransition.active) {
-                if (!roomTransition.newCaptured) {
+                    //clear for real this frame
                     ctx.fillStyle = "rgb(20, 30, 20)";
                     ctx.fillRect(0, 0, width / dprVal, height / dprVal);
+
+                    //chrome be tripping yall
                     ctx.imageSmoothingEnabled = false;
-                    drawRoomBackground(ctx, engine.player.room, engine.renderer.camera);
-                    engine.renderer.render(t);
-                    roomTransition.captureNew(canvas, engine);
-                    ctx.fillStyle = "rgb(20, 30, 20)";
-                    ctx.fillRect(0, 0, width, height);
-                }
 
-                ctx.save();
-                ctx.translate(shake.x, shake.y);
-                roomTransition.drawOldRoom(ctx);
-                roomTransition.drawNewRoom(ctx);
-                ctx.restore();
+                    shakes.forEach((s, i) => s.active(i));
 
-                engine.renderer._skipRender = true;
-                engine.tick(t, 0, {});
-                engine.renderer._skipRender = false;
-                roomTransition.tick(dt);
-            } else {
-                ctx.save();
-                ctx.translate(shake.x, shake.y);
+                    if (roomTransition.active) {
+                        if (!roomTransition.newCaptured) {
+                            ctx.fillStyle = "rgb(20, 30, 20)";
+                            ctx.fillRect(0, 0, width / dprVal, height / dprVal);
+                            ctx.imageSmoothingEnabled = false;
+                            drawRoomBackground(ctx, engine.player.room, engine.renderer.camera);
+                            engine.renderer.render(t);
+                            roomTransition.captureNew(canvas, engine);
+                            ctx.fillStyle = "rgb(20, 30, 20)";
+                            ctx.fillRect(0, 0, width, height);
+                        }
 
-                const player = engine.player;
-                const room = player?.room;
-                drawRoomBackground(ctx, room, engine.renderer.camera);
+                        ctx.save();
+                        ctx.translate(shake.x, shake.y);
+                        roomTransition.drawOldRoom(ctx);
+                        roomTransition.drawNewRoom(ctx);
+                        ctx.restore();
 
-                const preTickYv = engine.player.yv;
-                engine.tick(t, dt, events);
-                tickSounds(dt, engine.player, preTickYv);
+                        engine.renderer._skipRender = true;
+                        engine.tick(t, 0, {});
+                        engine.renderer._skipRender = false;
+                        roomTransition.tick(dt);
+                    } else {
+                        ctx.save();
+                        ctx.translate(shake.x, shake.y);
 
-                //hats - nevermore
-                //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
+                        const player = engine.player;
+                        const room = player?.room;
+                        drawRoomBackground(ctx, room, engine.renderer.camera);
 
-                //crazy Arrow idea lol
-                if (engine.slowMo) {
-                    const grad = ctx.createRadialGradient(
-                        width / 2,
-                        height / 2,
-                        height * 0.2,
-                        width / 2,
-                        height / 2,
-                        height * 0.85,
-                    );
-                    grad.addColorStop(0, "rgba(30, 80, 180, 0)");
-                    grad.addColorStop(1, "rgba(10, 30, 120, 0.55)");
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, effectiveWidth, effectiveHeight);
-                }
+                        const preTickYv = engine.player.yv;
+                        engine.tick(t, dt, events);
+                        tickSounds(dt, engine.player, preTickYv);
 
-                ctx.restore();
-                roomTransition.tick(dt);
-                if (!roomTransition.active && engine._pendingUpBoost) {
-                    engine._pendingUpBoost = false;
-                    engine.player.yv = -engine.jump;
-                }
+                        //hats - nevermore
+                        //renderPlayerHat(ctx, engine.player, engine.renderer.pixel, engine.renderer.camera);
+
+                        //crazy Arrow idea lol
+                        if (engine.slowMo) {
+                            const grad = ctx.createRadialGradient(
+                                width / 2,
+                                height / 2,
+                                height * 0.2,
+                                width / 2,
+                                height / 2,
+                                height * 0.85,
+                            );
+                            grad.addColorStop(0, "rgba(30, 80, 180, 0)");
+                            grad.addColorStop(1, "rgba(10, 30, 120, 0.55)");
+                            ctx.fillStyle = grad;
+                            ctx.fillRect(0, 0, effectiveWidth, effectiveHeight);
+                        }
+
+                        ctx.restore();
+                        roomTransition.tick(dt);
+                        if (!roomTransition.active && engine._pendingUpBoost) {
+                            engine._pendingUpBoost = false;
+                            engine.player.yv = -engine.jump;
+                        }
+                    }
+
+                    //advance collect animations
+                    if (engine._collectAnims) {
+                        for (const anim of engine._collectAnims) anim.progress += dt;
+                        engine._collectAnims = engine._collectAnims.filter(
+                            (a) => a.progress < a.duration,
+                        );
+                    }
+                    //tick HUD flash timers down
+                    if (engine._hudFlash) {
+                        for (const k of Object.keys(engine._hudFlash)) {
+                            engine._hudFlash[k] = Math.max(0, engine._hudFlash[k] - dt);
+                        }
+                    }
+
+                    renderHUD(ctx, engine.player, engine.renderer.basePixel, t);
+
+                    //minimap
+                    renderMinimap();
+
+                    frameCount++;
+                    Object.assign(eventsPrev, events);
+                break;
             }
-
-            //advance collect animations
-            if (engine._collectAnims) {
-                for (const anim of engine._collectAnims) anim.progress += dt;
-                engine._collectAnims = engine._collectAnims.filter(
-                    (a) => a.progress < a.duration,
-                );
-            }
-            //tick HUD flash timers down
-            if (engine._hudFlash) {
-                for (const k of Object.keys(engine._hudFlash)) {
-                    engine._hudFlash[k] = Math.max(0, engine._hudFlash[k] - dt);
-                }
-            }
-
-            renderHUD(ctx, engine.player, engine.renderer.basePixel, t);
-
-            //minimap
-            renderMinimap();
-
-            //ctx.restore();
-            frameCount++;
-            Object.assign(eventsPrev, events);
-            //} catch (e) {
-            //    console.error("Main loop error\n" + e.stack);
-            //}
         };
 
         //Replace interval with rAF
