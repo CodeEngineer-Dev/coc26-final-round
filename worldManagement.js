@@ -861,7 +861,7 @@ const roomTemplates = {
             "       bbbbbbBBBBbbbbBBBBBBB",
             "        bbbbbBBBbbbBBBBBBBBB",
             "        EbbbbbbbbbbBBBBBBBBB",
-            "   GOP  bbbbbbbbbbBBBBBBBBBB",
+            "   GOO  bbbbbbbbbbBBBBBBBBBB",
             "   BBBBbbbbbbbbbBBBBBBBBBBBB",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBB",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -874,7 +874,6 @@ const roomTemplates = {
         entities: {
             'G': (x, y) => new MEnvironment(x, y, 'grass1'),
             'O': (x, y) => new MEnvironment(x, y, 'grass2'),
-            'P': (x, y) => new MEnvironment(x, y, 'grass3'),
             'S': (x, y) => new MEnvironment(x, y, 'rock2'),
 
             e: (x, y) => new MBlob(x, y, "g1"),
