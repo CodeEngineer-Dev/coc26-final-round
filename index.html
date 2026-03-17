@@ -225,6 +225,7 @@
 
         function playBounceSound() {
             if (!bounceAudio || isMuted) return;
+            bounceAudio.setVolume(0.01)
             bounceAudio.pause();
             bounceAudio.play();
         }
@@ -376,7 +377,7 @@
                     footR?.setVolume(0.3);
                     coinAudio?.setVolume(0.6);
                     whooshAudio?.setVolume(0.5);
-                    bounceAudio?.setVolume(0.4);
+                    bounceAudio?.setVolume(0.2);
                     jumpAudio?.setVolume(0.1);
                     poundAudio?.setVolume(1);
                     hurtAudio?.setVolume(1);
@@ -432,7 +433,7 @@
             if (!bounceAudio || isMuted) return;
             const vol = Math.min(1.0, speed / 15) * 0.5;
             if (vol < 0.05) return;
-            bounceAudio.setVolume(vol);
+            bounceAudio.setVolume(vol / 10);
             bounceAudio.pause();
             bounceAudio.play();
         };
