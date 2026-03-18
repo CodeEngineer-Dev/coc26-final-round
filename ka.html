@@ -19829,6 +19829,11 @@ ${document.documentElement.outerHTML}
     //start
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(loop);
+
+    window.top.postMessage(JSON.stringify({
+        "action": "page-info",
+        "title": "Pona's Castle [GAME] [CoC FINAL]"
+    }), "https://www.khanacademy.org/");
   </script>
 </html>
 <!--
